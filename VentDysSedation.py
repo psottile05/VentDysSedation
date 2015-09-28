@@ -4,6 +4,7 @@ from pymongo import MongoClient, errors
 from CreationModules import FileSearch as FS
 import pandas as pd
 import numpy as np
+import scipy.signal as sig
 
 client = MongoClient()
 db = client.VentDB
@@ -13,7 +14,59 @@ input_log = db.input_log
 FS.file_search()
 
 #Query DB for list of files not yet loaded
-files = list(input_log.find({'type':'waveform', 'loaded':0}).limit(2))
+files = list(input_log.find({'type':'waveform', 'loaded':0}).limit(1))
+
+def breath_data(group):
+    start_time = group.time.min()
+    end_time = group.time.max()
+
+    if group[group.status==1].time.max() is not np.nan:
+        end_insp_time = group[group.status > 0].time.max()
+    else:
+        end_insp_time = group[group.status == 0].time.min()
+
+    breath_dict = {'breath_num': group.breath.min(),
+                 'date_time': group.date_time.head(1),
+                 'start_time': start_time,
+                 'end_insp_time': end_insp_time,
+                 'end_time': end_time,
+                 'insp_time': end_insp_time - start_time,
+                 'exp_time': end_time - end_insp_time,
+                 'elapse_time': end_time - start_time,
+
+                 'peak_paw': group.paw.max(),
+                 'mean_insp_paw': group[group.time <= end_insp_time].paw.mean(),
+                 'end_insp_paw': group[group.time == end_insp_time].paw.max(),
+                 'mean_exp_paw': group[group.time >= end_insp_time].paw.mean(),
+                 'min_paw':group.paw.min(),
+
+                 'peak_flow': group.flow.max(),
+                 'mean_insp_flow': group[group.time <= end_insp_time].flow.mean(),
+                 'end_insp_flow': group[group.time == end_insp_time].flow.min(),
+                 'mean_exp_flow': group[group.time >= end_insp_time].flow.mean(),
+                 'min_flow': group.flow.min(),
+
+                 'peak_vol': group.vol.max(),
+                 'end_insp_vol':  group[group.time == end_insp_time].vol.min(),
+                 'min_vol':  group.vol.min(),
+    }
+
+    calc_dict={  'dF/dV_insp_max': group[np.abs(group['dF/dV'] == np.inf) & (group.time <= end_insp_time)].time.values,
+                 'dP/dV_insp_max': group[np.abs(group['dP/dV'] == np.inf) & (group.time <= end_insp_time)].time.values,
+                 'dF/dP_insp_max': group[np.abs(group['dF/dP'] == np.inf) & (group.time <= end_insp_time)].time.values,
+
+                 'dF/dV_exp_max': group[np.abs(group['dF/dV'] == np.inf) & (group.time >= end_insp_time)].time.values,
+                 'dP/dV_exp_max': group[np.abs(group['dP/dV'] == np.inf) & (group.time >= end_insp_time)].time.values,
+                 'dF/dP_exp_max': group[np.abs(group['dF/dP'] == np.inf) & (group.time >= end_insp_time)].time.values,
+    }
+
+    normalize_list = ['dF/dV_insp_max','dP/dV_insp_max','dF/dP_insp_max', 'dF/dV_exp_max', 'dP/dV_exp_max', 'dF/dP_exp_max']
+    for item in normalize_list:
+        calc_dict['norm_'+ item] = (calc_dict[item] - breath_dict['start_time'])/breath_dict['elapse_time']
+
+    print(pd.DataFrame.from_dict(calc_dict), orient='index')
+    return pd.DataFrame.from_dict(breath_dict, orient='index').T
+
 
 for file in files:
     df = pd.read_csv(file['_id'], sep = '\t', header=1, na_values='--',
@@ -23,13 +76,22 @@ for file in files:
     df.rename(columns={'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                        'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace=True)
 
+    df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length=7, polyorder=2)
+    df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length=7, polyorder=2)
+    df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length=7, polyorder=2)
+
+    df['vol_dt'] = df.vol.diff()
+    df['flow_dt'] = df.flow.diff()
+    df['paw_dt'] = df.paw.diff()
+    df['dF/dV'] = df.flow_dt/df.vol_dt
+    df['dP/dV'] = df.paw_dt/df.vol_dt
+    df['dF/dP'] = df.flow_dt/df.paw_dt
+
     breath_df = df.groupby('breath')
-    print(len(breath_df.groups))
-    agg_df = breath_df.agg({'date_time': [np.min],
-                            'time':[np.min, np.max, lambda x: np.max(x)-np.min(x)],
-                            'paw':[np.min, np.max],
-                            'flow': [np.min, np.max],
-                            'vol':[np.min, np.max]})
-    print(agg_df.columns)
-    print(agg_df.head())
-    #print(breath_df.head())
+
+    agg_df = pd.DataFrame()
+    agg_df = pd.concat([agg_df, breath_df.apply(breath_data)])
+
+#print(agg_df.shape)
+#print(agg_df.describe())
+
