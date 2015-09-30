@@ -43,7 +43,7 @@ def breath_data(group):
         calc_dict[item] = np.pad(calc_dict[item], (0, 20 - len(calc_dict[item])), 'constant', constant_values = (0, 0))
         calc_dict['norm_' + item] = np.pad(calc_dict['norm_' + item], (0, 20 - len(calc_dict['norm_' + item])),
                                            'constant', constant_values = (0, 0))
-    calc_inner_df = pd.DataFrame.from_dict(calc_dict, orient = 'index').T.convert_objects()
+    calc_inner_df = pd.DataFrame.from_dict(calc_dict, orient='index').T.convert_objects()
 
     breath_dict = {
         # '_id':
@@ -82,12 +82,7 @@ def breath_data(group):
         'n_dP/dV_exp_max': calc_inner_df[calc_inner_df['dP/dV_exp_max'] > 0]['dP/dV_exp_max'].count(),
         'n_dF/dP_exp_max': calc_inner_df[calc_inner_df['dF/dP_exp_max'] > 0]['dF/dP_exp_max'].count()
     }
-    breath_inner_df = pd.DataFrame.from_dict(breath_dict, orient = 'index').T.convert_objects()
-    breath_inner_df['patient_ID'].astype('int32')
-    breath_inner_df['file'].astype('object', copy=False)
-    breath_inner_df['date_time'] = pd.to_datetime(breath_inner_df['date_time'])
-
-    return breath_inner_df
+    return
 
 
 for file in files:
@@ -100,8 +95,8 @@ for file in files:
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
 
-    df['patient_ID'] = re.search('(?<=P)[0-9]*', file['_id']).group()
-    df['file'] = re.search('(?<=/)[a-zA-Z0-9]*', file['_id']).group()
+    df['patient_ID'] = int(re.search('(?<=P)[0-9]*', file['_id']).group())
+    df['file'] = str(re.search('(?<=\d\d/).*', file['_id']).group())
     df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
     df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
     df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length = 7, polyorder = 2)
@@ -114,11 +109,5 @@ for file in files:
     df['dF/dP'] = df.flow_dt / df.paw_dt
 
     breath_df = df.groupby('breath')
+    breath_df.apply(breath_data)
 
-    #agg_breath_df = pd.DataFrame()
-    #calc_df = pd.DataFrame()
-    print(breath_df.apply(breath_data))
-    #agg_breath_df, calc_df = breath_df.apply(breath_data)
-
-#print(agg_breath_df.shape)
-#print(agg_breath_df.describe())
