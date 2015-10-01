@@ -15,7 +15,7 @@ input_log = db.input_log
 FS.file_search()
 
 # Query DB for list of files not yet loaded
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
 
 
 def breath_data(group):
@@ -39,10 +39,10 @@ def breath_data(group):
     normalize_list = ['dF/dV_insp_max', 'dP/dV_insp_max', 'dF/dP_insp_max', 'dF/dV_exp_max', 'dP/dV_exp_max',
                       'dF/dP_exp_max']
     for item in normalize_list:
+        array_len = 20 - len(calc_dict[item])
         calc_dict['norm_' + item] = (calc_dict[item] - start_time) / elapse_time
-        calc_dict[item] = np.pad(calc_dict[item], (0, 20 - len(calc_dict[item])), 'constant', constant_values = (0, 0))
-        calc_dict['norm_' + item] = np.pad(calc_dict['norm_' + item], (0, 20 - len(calc_dict['norm_' + item])),
-                                           'constant', constant_values = (0, 0))
+        calc_dict[item] = np.resize(calc_dict[item], (15,))
+        calc_dict['norm_' + item] = np.resize(calc_dict['norm_' + item], (15,))
     calc_inner_df = pd.DataFrame.from_dict(calc_dict, orient='index').T.convert_objects()
 
     breath_dict = {
