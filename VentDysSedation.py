@@ -1,5 +1,8 @@
 __author__ = 'sottilep'
 
+from gevent import monkey
+monkey.patch_all()
+
 from pymongo import MongoClient, errors
 from CreationModules import FileSearch as FS
 import re
@@ -9,14 +12,16 @@ import scipy.signal as sig
 
 client = MongoClient()
 db = client.VentDB
+
 input_log = db.input_log
+breath_col = db.breath_collection
+breath_col.drop()
 
 # Update List of RawDataFiles
 FS.file_search()
 
 # Query DB for list of files not yet loaded
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
-
 
 def breath_data(group):
     start_time = group.time.min()
@@ -38,19 +43,14 @@ def breath_data(group):
 
     normalize_list = ['dF/dV_insp_max', 'dP/dV_insp_max', 'dF/dP_insp_max', 'dF/dV_exp_max', 'dP/dV_exp_max',
                       'dF/dP_exp_max']
+
     for item in normalize_list:
-        array_len = 20 - len(calc_dict[item])
         calc_dict['norm_' + item] = (calc_dict[item] - start_time) / elapse_time
         calc_dict[item] = np.resize(calc_dict[item], (15,))
         calc_dict['norm_' + item] = np.resize(calc_dict['norm_' + item], (15,))
     calc_inner_df = pd.DataFrame.from_dict(calc_dict, orient='index').T.convert_objects()
 
     breath_dict = {
-        # '_id':
-        'patient_ID': group.patient_ID.head(1),
-        'file': group.file.head(1),
-        'breath_num': group.breath.min(),
-        'date_time': group.date_time.head(1),
         'start_time': start_time,
         'end_insp_time': end_insp_time,
         'end_time': end_time,
@@ -74,14 +74,51 @@ def breath_data(group):
         'end_insp_vol': group[group.time == end_insp_time].vol.min(),
         'min_vol': group.vol.min(),
 
-        'n_dF/dV_insp_max': calc_inner_df[calc_inner_df['dF/dV_insp_max'] > 0]['dF/dV_insp_max'].count(),
-        'n_dP/dV_insp_max': calc_inner_df[calc_inner_df['dP/dV_insp_max'] > 0]['dP/dV_insp_max'].count(),
-        'n_dF/dP_insp_max': calc_inner_df[calc_inner_df['dF/dP_insp_max'] > 0]['dF/dP_insp_max'].count(),
+        'n_dF/dV_insp_max': int(calc_inner_df[calc_inner_df['dF/dV_insp_max'] > 0]['dF/dV_insp_max'].count()),
+        'n_dP/dV_insp_max': int(calc_inner_df[calc_inner_df['dP/dV_insp_max'] > 0]['dP/dV_insp_max'].count()),
+        'n_dF/dP_insp_max': int(calc_inner_df[calc_inner_df['dF/dP_insp_max'] > 0]['dF/dP_insp_max'].count()),
 
-        'n_dF/dV_exp_max': calc_inner_df[calc_inner_df['dF/dV_exp_max'] > 0]['dF/dV_exp_max'].count(),
-        'n_dP/dV_exp_max': calc_inner_df[calc_inner_df['dP/dV_exp_max'] > 0]['dP/dV_exp_max'].count(),
-        'n_dF/dP_exp_max': calc_inner_df[calc_inner_df['dF/dP_exp_max'] > 0]['dF/dP_exp_max'].count()
+        'n_dF/dV_exp_max': int(calc_inner_df[calc_inner_df['dF/dV_exp_max'] > 0]['dF/dV_exp_max'].count()),
+        'n_dP/dV_exp_max': int(calc_inner_df[calc_inner_df['dP/dV_exp_max'] > 0]['dP/dV_exp_max'].count()),
+        'n_dF/dP_exp_max': int(calc_inner_df[calc_inner_df['dF/dP_exp_max'] > 0]['dF/dP_exp_max'].count())
     }
+
+    raw_dict = {
+        'time': group.time.values.tolist(),
+        'breath': group.breath.values.tolist(),
+        'status': group.status.values.tolist(),
+        'paw': group.paw.values.tolist(),
+        'flow': group.flow.values.tolist(),
+        'vol': group.vol.values.tolist(),
+        'sm_paw': group.sm_paw.values.tolist(),
+        'sm_flow': group.sm_flow.values.tolist(),
+        'sm_vol': group.sm_vol.values.tolist(),
+        'dF/dV': group['dF/dV'].values.tolist(),
+        'dP/dV': group['dP/dV'].values.tolist(),
+        'dF/dP': group['dF/dP'].values.tolist()
+    }
+
+    mongo_record = {
+        '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
+               + '/' +str(start_time),
+        'patient_ID': int(group.patient_ID.head(1)),
+        'file': group.file.head(1).values.tolist()[0],
+        'breath_num': group.breath.min(),
+        'date_time': group.date_time.dt.to_pydatetime().min(),
+        'breath_raw': raw_dict,
+        'breath_character': breath_dict,
+        'breath_derivative': calc_inner_df.to_dict(orient='list')
+    }
+
+    try:
+        breath_col.insert_one(mongo_record)
+    except errors.DuplicateKeyError:
+        if group.breath.min() == 0:
+            pass
+        else:
+            print('Dup Key Error: ', mongo_record['_id'])
+            pass
+
     return
 
 
@@ -110,4 +147,3 @@ for file in files:
 
     breath_df = df.groupby('breath')
     breath_df.apply(breath_data)
-
