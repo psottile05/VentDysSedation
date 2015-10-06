@@ -23,5 +23,5 @@ files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
 
 for file in files:
     df = DBCreate.get_waveform_data(file)
-    breath_df = df.groupby('breath')
-    breath_df.apply(DBCreate.breath_data_entry)
+    df.groupby('breath').apply(DBCreate.breath_data_entry)
+    print(file)
