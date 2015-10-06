@@ -38,6 +38,9 @@ def get_waveform_data(file):
     return df
 
 
+def get_breath_data(file):
+    pass
+
 def breath_data_entry(group):
     start_time = group.time.min()
     end_time = group.time.max()
@@ -125,12 +128,12 @@ def breath_data_entry(group):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
-    try:
-        breath_col.insert_one(mongo_record)
-    except errors.DuplicateKeyError:
-        if group.breath.min() == 0:
-            pass
-        else:
-            print('Dup Key Error: ', mongo_record['_id'])
-            pass
-    return
+    #try:
+    #    breath_col.insert_one(mongo_record)
+    #except errors.DuplicateKeyError:
+    #    if group.breath.min() == 0:
+    #        pass
+    #    else:
+    #        print('Dup Key Error: ', mongo_record['_id'])
+    #        pass
+    return mongo_record
