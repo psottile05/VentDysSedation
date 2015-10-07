@@ -14,10 +14,12 @@ db = client.VentDB
 
 input_log = db.input_log
 breath_col = db.breath_collection
+input_log.drop()
 breath_col.drop()
 
-# Update List of RawDataFiles
+# Update List of RawDataFiles and Match Breath/Waveform Files
 FS.file_search()
+FS.file_match()
 
 # Query DB for list of files not yet added
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
