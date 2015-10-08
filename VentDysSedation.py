@@ -30,6 +30,7 @@ breath_col.create_index([('patient_ID', pymongo.ASCENDING),
 breath_col.create_index([('location', pymongo.GEO2D)], min = -1,
                         max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
+
 # Update List of RawDataFiles and Match Breath/Waveform Files
 FS.file_search()
 FS.file_match()
@@ -43,5 +44,6 @@ for file in files:
         json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')))
 
     breath_df = DBCreate.get_breath_data(file)
+    breath_df.apply(DBCreate.breath_data_entry, axis = 1)
 
     # print(file)

@@ -100,8 +100,10 @@ def get_breath_data(file):
                  'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
                  't_exp': 'float64',
                  'complaince': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
+
         date_check(df)
         dtype_check(df, types)
+
     else:
         df = pd.DataFrame()
 
@@ -109,7 +111,23 @@ def get_breath_data(file):
 
 
 def breath_data_entry(df):
-    pass
+    for r in breath_col.find(projection = ['loc']):
+        print(r)
+
+    # print(df['date_time'].timestamp(), df['patient_ID'])
+
+    # [df['date_time'].timestamp(), df['patient_ID']]
+    results = breath_col.aggregate([{'$geoNear': {
+        'near': [1398123400.0, 100],
+        'query': {'patient_ID': 100},
+        'distanceField': 'distance',
+        # 'maxDistance': 100,
+        # 'limit': 1
+    }}])
+
+    for items in results:
+        print(items)
+
 
 def waveform_data_entry(group):
     start_time = group.time.min()
@@ -198,8 +216,8 @@ def waveform_data_entry(group):
         'patient_ID': int(group.patient_ID.head(1)),
         'file': group.file.head(1).values.tolist()[0],
         'breath_num': group.breath.min(),
-        'date_time': group.date_time.dt.to_pydatetime().min(),
-        'loc':[group.date_time.dt.to_pydatetime().min().timestamp(), int(group.patient_ID.head(1))],
+        'date_time': group.date_time.min().timestamp(),
+        'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
         'breath_raw': raw_dict,
         'breath_character': breath_dict,
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
