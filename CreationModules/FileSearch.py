@@ -52,7 +52,7 @@ def file_search():
                                       'type': file_type,
                                       'start_time': start_time,
                                       'loc': [start_time, p_id],
-                                      'loaded': 0, 'crossed': 0, 'analyzed': 0})
+                                      'loaded': 0})
             except errors.DuplicateKeyError:
                 print('Dup Keys', file.name)
 
@@ -72,3 +72,14 @@ def file_match():
                                           {'$set':{'match_file': items['_id'],
                                            'distance': items['distance'],
                                            'crossed': 1}})
+
+    for output in input_log.aggregate([{'$match':{'crossed': 1}},
+                               {'$group':{
+                                   '_id': '$patient_id',
+                                   'min_dist':{'$min': '$distance'},
+                                   'max_dist':{'$max': '$distance'},
+                                   'avg_dist':{'$avg': '$distance'},
+                                   'count':{'$sum':1}}},
+                               {'$sort':{'_id':1}}
+                               ]):
+        print(output)
