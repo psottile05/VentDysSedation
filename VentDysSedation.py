@@ -26,8 +26,7 @@ files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
 
 for file in files:
     df = DBCreate.get_waveform_data(file)
-    breath_col.insert_many(json.loads(df.groupby('breath').apply(DBCreate.breath_data_entry).to_json(orient='records')))
+    breath_col.insert_many(json.loads(df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient='records')))
 
     df = DBCreate.get_breath_data(file)
-
-print(input_log.find({'type':'waveform'}).count(), input_log.find({'crossed':1}).count())
+    print(file)

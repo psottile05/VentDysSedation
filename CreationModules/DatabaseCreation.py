@@ -41,7 +41,7 @@ def get_waveform_data(file):
 def get_breath_data(file):
     pass
 
-def breath_data_entry(group):
+def waveform_data_entry(group):
     start_time = group.time.min()
     end_time = group.time.max()
     elapse_time = end_time - start_time
@@ -123,6 +123,7 @@ def breath_data_entry(group):
         'file': group.file.head(1).values.tolist()[0],
         'breath_num': group.breath.min(),
         'date_time': group.date_time.dt.to_pydatetime().min(),
+        'loc':[group.date_time.dt.to_pydatetime().min().timestamp(), int(group.patient_ID.head(1))],
         'breath_raw': raw_dict,
         'breath_character': breath_dict,
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')

@@ -73,6 +73,8 @@ def file_match():
                                            'distance': items['distance'],
                                            'crossed': 1}})
 
+    #To Assess Distances Matches
+    '''
     for output in input_log.aggregate([{'$match':{'crossed': 1}},
                                {'$group':{
                                    '_id': '$patient_id',
@@ -83,3 +85,4 @@ def file_match():
                                {'$sort':{'_id':1}}
                                ]):
         print(output)
+    '''
