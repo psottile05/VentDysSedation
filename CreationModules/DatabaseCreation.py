@@ -12,6 +12,21 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
+
+def date_check(df):
+    if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
+        print('Year out of range', df['date_time'].dt.year.min())
+
+
+def dtype_check(df, types):
+    for col in df.columns:
+        try:
+            assert df[col].dtype == types[col]
+        except AssertionError:
+            print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
+                  + str(df['file'].head(1).values.tolist()[0]))
+            print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
+
 def get_waveform_data(file):
     df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
@@ -34,6 +49,16 @@ def get_waveform_data(file):
     df['dF/dV'] = df.flow_dt / df.vol_dt
     df['dP/dV'] = df.paw_dt / df.vol_dt
     df['dF/dP'] = df.flow_dt / df.paw_dt
+
+    types = {'time': 'int64', 'breath': 'int64', 'status': 'int64', 'paw': 'float64', 'flow': 'float64',
+             'vol': 'float64',
+             'date_time': 'datetime64[ns]', 'patient_ID': 'int64', 'file': 'object', 'sm_vol': 'float64',
+             'sm_paw': 'float64',
+             'sm_flow': 'float64', 'vol_dt': 'float64', 'flow_dt': 'float64', 'paw_dt': 'float64', 'dF/dV': 'float64',
+             'dP/dV': 'float64', 'dF/dP': 'float64'}
+
+    date_check(df)
+    dtype_check(df, types)
 
     return df
 
@@ -64,6 +89,18 @@ def get_breath_data(file):
                                          infer_datetime_format = True)
         df['patient_ID'] = int(file['patient_id'])
         df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
+
+        types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
+                 'psupp': 'float64',
+                 'vent_mode': 'object', 'fio2': 'float64', 'tigger': 'float64', 'i:e': 'object', 'ramp': 'float64',
+                 'vti': 'float64', 'vte': 'float64', 'exp_minute_vol': 'float64', 'insp_flow': 'float64',
+                 'leak': 'float64',
+                 'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
+                 'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
+                 't_exp': 'float64',
+                 'complaince': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
+        date_check(df)
+        dtype_check(df, types)
     else:
         df = pd.DataFrame()
 
@@ -99,6 +136,12 @@ def waveform_data_entry(group):
         calc_dict[item] = np.resize(calc_dict[item], (15,))
         calc_dict['norm_' + item] = np.resize(calc_dict['norm_' + item], (15,))
     calc_inner_df = pd.DataFrame.from_dict(calc_dict, orient = 'index').T.convert_objects()
+
+    types = {'norm_dP/dV_exp_max': 'float64', 'dP/dV_exp_max': 'float64', 'norm_dP/dV_insp_max': 'float64',
+             'norm_dF/dV_exp_max': 'float64', 'dF/dV_insp_max': 'float64', 'dF/dV_exp_max': 'float64',
+             'norm_dF/dV_insp_max': 'float64', 'norm_dF/dP_exp_max': 'float64', 'dF/dP_exp_max': 'float64',
+             'dP/dV_insp_max': 'float64', 'dF/dP_insp_max': 'float64', 'norm_dF/dP_insp_max': 'float64'}
+    dtype_check(calc_inner_df, types)
 
     breath_dict = {
         'start_time': start_time,
