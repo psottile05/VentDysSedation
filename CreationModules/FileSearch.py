@@ -13,6 +13,20 @@ input_log = db.input_log
 p = Path('c:\Research_data\RawData')
 
 
+def match_stats():
+    for output in input_log.aggregate([{'$match': {'crossed': 1}},
+                                       {'$group': {
+                                           '_id': '$patient_id',
+                                           'min_dist': {'$min': '$distance'},
+                                           'max_dist': {'$max': '$distance'},
+                                           'avg_dist': {'$avg': '$distance'},
+                                           'count': {'$sum': 1}}},
+                                       {'$sort': {'_id': 1}}
+                                       ]):
+        print(output)
+    print(input_log.find({'type': 'waveform'}).count(), input_log.find({'crossed': 1}).count())
+
+
 def file_search():
     input_log.create_index([('type', pymongo.TEXT),
                           ('loaded', pymongo.ASCENDING),
@@ -63,7 +77,7 @@ def file_match():
         results = input_log.aggregate([{'$geoNear':
                                             {'near': files['loc'],
                                              'distanceField':'distance',
-                                             'query': {'type': 'breath'},
+                                             'query': {'type': 'breath', 'patient_id': files['patient_id']},
                                              'maxDistance': 100,
                                              'limit': 1
                                         }}])
@@ -75,16 +89,5 @@ def file_match():
                                            'crossed': 1}})
 
     #To Assess Distances Matches
-    '''
-    for output in input_log.aggregate([{'$match':{'crossed': 1}},
-                               {'$group':{
-                                   '_id': '$patient_id',
-                                   'min_dist':{'$min': '$distance'},
-                                   'max_dist':{'$max': '$distance'},
-                                   'avg_dist':{'$avg': '$distance'},
-                                   'count':{'$sum':1}}},
-                               {'$sort':{'_id':1}}
-                               ]):
-        print(output)
-    print(input_log.find({'type':'waveform'}).count(), input_log.find({'crossed':1}).count())
-    '''
+            # match_stats()
+
