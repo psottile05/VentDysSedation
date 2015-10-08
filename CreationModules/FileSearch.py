@@ -64,6 +64,7 @@ def file_match():
                                             {'near': files['loc'],
                                              'distanceField':'distance',
                                              'query': {'type': 'breath'},
+                                             'maxDistance': 100,
                                              'limit': 1
                                         }}])
 
