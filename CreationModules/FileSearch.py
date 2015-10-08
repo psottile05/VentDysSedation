@@ -86,4 +86,5 @@ def file_match():
                                {'$sort':{'_id':1}}
                                ]):
         print(output)
+    print(input_log.find({'type':'waveform'}).count(), input_log.find({'crossed':1}).count())
     '''
