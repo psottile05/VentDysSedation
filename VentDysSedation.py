@@ -29,6 +29,5 @@ for file in files:
     breath_col.insert_many(json.loads(df.groupby('breath').apply(DBCreate.breath_data_entry).to_json(orient='records')))
 
     df = DBCreate.get_breath_data(file)
-    print(file)
 
-print(breath_col.find().count())
+print(input_log.find({'type':'waveform'}).count(), input_log.find({'crossed':1}).count())
