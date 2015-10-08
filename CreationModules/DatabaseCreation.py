@@ -1,6 +1,6 @@
 __author__ = 'sottilep'
 
-from pymongo import MongoClient, errors
+from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 import re
@@ -39,6 +39,38 @@ def get_waveform_data(file):
 
 
 def get_breath_data(file):
+    if isinstance(file['match_file'], type('String')):
+        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--',
+                         usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
+                                    'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
+                                    'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
+                                    'Ramp (ms)', 'VTI (ml)', 'VTE (ml)',
+                                    'ExpMinVol (l/min)', 'Insp flow (l/min)', 'Vt leak (ml)',
+                                    'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
+                                    'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
+                                    'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
+                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
+        df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
+                             'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
+                             'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
+                             'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
+                             'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
+                             'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
+                             'P mean (cmH2O)': 'mean_paw',
+                             'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
+                             'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
+                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'complaince', 'TI (s)': 't_insp'}, inplace = True)
+        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], coerce = True, dayfirst = True,
+                                         infer_datetime_format = True)
+        df['patient_ID'] = int(file['patient_id'])
+        df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
+    else:
+        df = pd.DataFrame()
+
+    return df
+
+
+def breath_data_entry(df):
     pass
 
 def waveform_data_entry(group):
@@ -129,12 +161,4 @@ def waveform_data_entry(group):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
-    #try:
-    #    breath_col.insert_one(mongo_record)
-    #except errors.DuplicateKeyError:
-    #    if group.breath.min() == 0:
-    #        pass
-    #    else:
-    #        print('Dup Key Error: ', mongo_record['_id'])
-    #        pass
     return mongo_record
