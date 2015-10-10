@@ -1,6 +1,7 @@
 __author__ = 'sottilep'
 
 from gevent import monkey
+
 monkey.patch_all()
 
 from pymongo import MongoClient
@@ -23,10 +24,10 @@ breath_col = db.breath_collection
 input_log.drop()
 breath_col.drop()
 
-breath_col.create_index([('patient_ID', pymongo.ASCENDING),
-                         ('file', pymongo.TEXT),
-                         ('breath_num', pymongo.ASCENDING),
-                         ('date_time', pymongo.ASCENDING)])
+breath_col.create_index([('patient_ID', pymongo.ASCENDING)])
+breath_col.create_index([('file', pymongo.TEXT)])
+breath_col.create_index([('breath_num', pymongo.ASCENDING)])
+breath_col.create_index([('date_time', pymongo.ASCENDING)])
 breath_col.create_index([('location', pymongo.GEO2D)], min = -1,
                         max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
@@ -44,6 +45,17 @@ for file in files:
         json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')))
 
     breath_df = DBCreate.get_breath_data(file)
-    breath_df.apply(DBCreate.breath_data_entry, axis = 1)
 
-    # print(file)
+    # test = breath_col.aggregate([{'$geoNear':
+    #    {'near': [1398123400, 100],
+    #     'query': {'patient_ID': 100},
+    #     'distanceField': 'distance',
+    #    # 'maxDistance': 100,
+    #    #'limit': 1
+    # }}])
+    test = breath_col.find({'near': [1398123400, 100]})
+    for item in test:
+        print(item)
+        # breath_df.apply(DBCreate.breath_data_entry, axis = 1)
+
+        # print(file)

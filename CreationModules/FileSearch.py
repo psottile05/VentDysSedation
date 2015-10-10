@@ -29,9 +29,10 @@ def match_stats():
 
 def file_search():
     input_log.create_index([('type', pymongo.TEXT),
-                          ('loaded', pymongo.ASCENDING),
-                          ('analyzed', pymongo.ASCENDING)])
-    input_log.create_index([('loc', pymongo.GEO2D)], min=-1, max=(datetime.datetime.now()+datetime.timedelta(days=1440)).timestamp())
+                            ('loaded', pymongo.ASCENDING),
+                            ('analyzed', pymongo.ASCENDING)])
+    input_log.create_index([('loc', pymongo.GEO2D)], min = -1,
+                           max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
     for x in p.iterdir():
         files = [y for y in x.glob('*.txt')]
@@ -53,10 +54,10 @@ def file_search():
                 start_time = -1
 
             else:
-                 try:
-                     start_time = datetime.datetime.strptime(start_time.group(), '%y-%m-%d-%H-%M').timestamp()
-                 except ValueError:
-                     start_time = re.sub('-', '.', start_time.group())
+                try:
+                    start_time = datetime.datetime.strptime(start_time.group(), '%y-%m-%d-%H-%M').timestamp()
+                except ValueError:
+                    start_time = re.sub('-', '.', start_time.group())
 
             p_id = float(re.search(r'(?<=P)[0-9]*', file.as_posix()).group(0))
 
@@ -76,18 +77,17 @@ def file_match():
     for files in waveform_files:
         results = input_log.aggregate([{'$geoNear':
                                             {'near': files['loc'],
-                                             'distanceField':'distance',
+                                             'distanceField': 'distance',
                                              'query': {'type': 'breath', 'patient_id': files['patient_id']},
                                              'maxDistance': 100,
                                              'limit': 1
-                                        }}])
+                                             }}])
 
         for items in results:
-            input_log.find_one_and_update({'_id':files['_id']},
-                                          {'$set':{'match_file': items['_id'],
-                                           'distance': items['distance'],
-                                           'crossed': 1}})
+            input_log.find_one_and_update({'_id': files['_id']},
+                                          {'$set': {'match_file': items['_id'],
+                                                    'distance': items['distance'],
+                                                    'crossed': 1}})
 
-    #To Assess Distances Matches
+            # To Assess Distances Matches
             # match_stats()
-

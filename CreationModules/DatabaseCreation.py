@@ -111,18 +111,15 @@ def get_breath_data(file):
 
 
 def breath_data_entry(df):
-    for r in breath_col.find(projection = ['loc']):
-        print(r)
-
     # print(df['date_time'].timestamp(), df['patient_ID'])
 
     # [df['date_time'].timestamp(), df['patient_ID']]
     results = breath_col.aggregate([{'$geoNear': {
         'near': [1398123400.0, 100],
-        'query': {'patient_ID': 100},
+        # 'query': {'patient_ID': 100},
         'distanceField': 'distance',
         # 'maxDistance': 100,
-        # 'limit': 1
+        'limit': 1
     }}])
 
     for items in results:
