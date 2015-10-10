@@ -28,12 +28,6 @@ def match_stats():
 
 
 def file_search():
-    input_log.create_index([('type', pymongo.TEXT),
-                            ('loaded', pymongo.ASCENDING),
-                            ('analyzed', pymongo.ASCENDING)])
-    input_log.create_index([('loc', pymongo.GEO2D)], min = -1,
-                           max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
-
     for x in p.iterdir():
         files = [y for y in x.glob('*.txt')]
         for file in files:
@@ -67,13 +61,13 @@ def file_search():
                                       'type': file_type,
                                       'start_time': start_time,
                                       'loc': [start_time, p_id],
-                                      'loaded': 0})
+                                      'loaded': 0, 'crossed': 0})
             except errors.DuplicateKeyError:
                 print('Dup Keys', file.name)
 
 
 def file_match():
-    waveform_files = input_log.find({'type': 'waveform'})
+    waveform_files = input_log.find({'type': 'waveform', 'crossed': 0})
     for files in waveform_files:
         results = input_log.aggregate([{'$geoNear':
                                             {'near': files['loc'],

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import re
 import scipy.signal as sig
+import datetime
 
 client = MongoClient()
 db = client.VentDB
@@ -26,6 +27,7 @@ def dtype_check(df, types):
             print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
                   + str(df['file'].head(1).values.tolist()[0]))
             print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
+
 
 
 def get_waveform_data(file):
@@ -89,10 +91,11 @@ def get_breath_data(file):
         df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], coerce = True, dayfirst = True,
                                          infer_datetime_format = True)
         df['patient_ID'] = int(file['patient_id'])
+        df['file'] = file['match_file']
         df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
 
         types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
-                 'psupp': 'float64',
+                 'psupp': 'float64', 'file': 'object',
                  'vent_mode': 'object', 'fio2': 'float64', 'tigger': 'float64', 'i:e': 'object', 'ramp': 'float64',
                  'vti': 'float64', 'vte': 'float64', 'exp_minute_vol': 'float64', 'insp_flow': 'float64',
                  'leak': 'float64',
@@ -110,20 +113,17 @@ def get_breath_data(file):
     return df
 
 
-def breath_data_entry(df):
-    # print(df['date_time'].timestamp(), df['patient_ID'])
-
-    # [df['date_time'].timestamp(), df['patient_ID']]
+def breath_data_entry(df, match_file):
     results = breath_col.aggregate([{'$geoNear': {
-        'near': [1398123400.0, 100],
-        # 'query': {'patient_ID': 100},
+        'near': [df['date_time'].timestamp(), df['patient_ID']],
+        'query': {'patient_ID': df['patient_ID'], 'file': match_file},
         'distanceField': 'distance',
-        # 'maxDistance': 100,
+        'maxDistance': 100,
         'limit': 1
     }}])
 
     for items in results:
-        print(items)
+        print(datetime.datetime.fromtimestamp(items['loc'][0]), df['date_time'], items['distance'])
 
 
 def waveform_data_entry(group):
