@@ -45,10 +45,10 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(3))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
 
 for file in files:
-    print(file)
+    # print(file)
     wave_df = DBCreate.get_waveform_data(file)
     breath_col.insert_many(
         json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')))

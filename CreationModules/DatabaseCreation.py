@@ -123,7 +123,12 @@ def breath_data_entry(df, match_file):
     }}])
 
     for items in results:
-        print(datetime.datetime.fromtimestamp(items['loc'][0]), df['date_time'], items['distance'])
+        df_dict = df.to_dict()
+        del df_dict['patient_ID']
+        del df_dict['file']
+
+        breath_col.find_one_and_update({'_id': items['_id']},
+                                       {'$set': {'breath_settings': df_dict}})
 
 
 def waveform_data_entry(group):
