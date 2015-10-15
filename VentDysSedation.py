@@ -51,7 +51,8 @@ for file in files:
     print(file['_id'])
     wave_df = DBCreate.get_waveform_data(file)
     breath_col.insert_many(
-        json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')))
+        json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')),
+        ordered = False)
     input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
 
     bulk_breath = breath_col.initialize_unordered_bulk_op()
