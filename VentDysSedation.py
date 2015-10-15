@@ -2,7 +2,7 @@ __author__ = 'sottilep'
 
 from gevent import monkey
 
-# monkey.patch_all()
+monkey.patch_all()
 
 from pymongo import MongoClient
 from CreationModules import FileSearch as FS
@@ -13,8 +13,8 @@ import pandas as pd
 import pymongo
 import datetime
 import re
-# import gevent
-# from gevent.lock import Semaphore
+import gevent
+from gevent.lock import Semaphore
 
 pd.set_option('max_columns', 40)
 client = MongoClient()
@@ -47,13 +47,18 @@ FS.file_match()
 # Query DB for list of files not yet added
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(3))
 
+
+def get_waveform(file, semaphore):
+    with semaphore:
+        wave_df = DBCreate.get_waveform_data(file)
+        breath_col.insert_many(
+            json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')),
+            ordered = False)
+        input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+
 for file in files:
     print(file['_id'])
-    wave_df = DBCreate.get_waveform_data(file)
-    breath_col.insert_many(
-        json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')),
-        ordered = False)
-    input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+    gevent.spawn(get_waveform, file, Semaphore(100))
 
     bulk_breath = breath_col.initialize_unordered_bulk_op()
     breath_df = DBCreate.get_breath_data(file)
