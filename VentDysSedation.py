@@ -57,17 +57,21 @@ def get_waveform(file, semaphore):
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
 
 
-greenlets = [gevent.spawn(get_waveform, file, Semaphore(100)) for file in files]
-gevent.joinall(greenlets)
+def get_breath(file, semaphore):
+    with semaphore:
+        bulk_breath = breath_col.initialize_unordered_bulk_op()
+        breath_df = DBCreate.get_breath_data(file)
+        breath_df.apply(DBCreate.breath_data_entry, axis = 1,
+                        match_file = re.search(r'(?<=\d/).*', file['_id']).group(),
+                        bulk_breath = bulk_breath)
+        bulk_breath.execute()
+        input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
-for file in files:
-    print(file['_id'])
 
-    bulk_breath = breath_col.initialize_unordered_bulk_op()
-    breath_df = DBCreate.get_breath_data(file)
-    breath_df.apply(DBCreate.breath_data_entry, axis = 1, match_file = re.search(r'(?<=\d/).*', file['_id']).group(),
-                    bulk_breath = bulk_breath)
-    input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
-    bulk_breath.execute()
+wave_greenlets = [gevent.spawn(get_waveform, file, Semaphore(100)) for file in files]
+breath_greenlets = [gevent.spawn(get_breath, file, Semaphore(100)) for file in files]
+
+gevent.joinall(wave_greenlets)
+gevent.joinall(breath_greenlets)
 
 print(breath_col.find_one({'breath_settings': {'$exists': 1}}))
