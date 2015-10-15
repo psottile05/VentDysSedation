@@ -60,5 +60,4 @@ for file in files:
     breath_df.apply(DBCreate.breath_data_entry, axis = 1, match_file = re.search(r'(?<=\d/).*', file['_id']).group(),
                     bulk_breath = bulk_breath)
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
-
-bulk_breath.execute()
+    bulk_breath.execute()
