@@ -54,6 +54,10 @@ for file in files:
         json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')))
     input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
 
+    bulk_breath = breath_col.initialize_unordered_bulk_op()
     breath_df = DBCreate.get_breath_data(file)
-    breath_df.apply(DBCreate.breath_data_entry, axis = 1, match_file = re.search(r'(?<=\d/).*', file['_id']).group())
+    breath_df.apply(DBCreate.breath_data_entry, axis = 1, match_file = re.search(r'(?<=\d/).*', file['_id']).group(),
+                    bulk_breath = bulk_breath)
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+
+bulk_breath.execute()

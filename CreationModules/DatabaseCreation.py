@@ -1,6 +1,6 @@
 __author__ = 'sottilep'
 
-from pymongo import MongoClient
+from pymongo import MongoClient, bulk
 import numpy as np
 import pandas as pd
 import re
@@ -112,7 +112,8 @@ def get_breath_data(file):
     return df
 
 
-def breath_data_entry(df, match_file):
+def breath_data_entry(df, match_file, bulk_breath):
+
     results = breath_col.aggregate([{'$geoNear': {
         'near': [df['date_time'].timestamp(), df['patient_ID']],
         'query': {'patient_ID': df['patient_ID'], 'file': match_file},
@@ -126,8 +127,9 @@ def breath_data_entry(df, match_file):
         del df_dict['patient_ID']
         del df_dict['file']
 
-        breath_col.find_one_and_update({'_id': items['_id']},
-                                       {'$set': {'breath_settings': df_dict}})
+        bulk_breath.find({'_id': items['_id']}).update({'$set': {'breath_settings': df_dict}})
+        # breath_col.find_one_and_update({'_id': items['_id']},
+        #                               {'$set': {'breath_settings': df_dict}})
 
 
 def waveform_data_entry(group):
