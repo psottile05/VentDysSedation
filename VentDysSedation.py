@@ -45,7 +45,7 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
 
 for file in files:
     print(file['_id'])
