@@ -56,9 +56,12 @@ def get_waveform(file, semaphore):
             ordered = False)
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
 
+
+greenlets = [gevent.spawn(get_waveform, file, Semaphore(100)) for file in files]
+gevent.joinall(greenlets)
+
 for file in files:
     print(file['_id'])
-    gevent.spawn(get_waveform, file, Semaphore(100))
 
     bulk_breath = breath_col.initialize_unordered_bulk_op()
     breath_df = DBCreate.get_breath_data(file)
@@ -66,3 +69,5 @@ for file in files:
                     bulk_breath = bulk_breath)
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
     bulk_breath.execute()
+
+print(breath_col.find_one({'breath_settings': {'$exists': 1}}))
