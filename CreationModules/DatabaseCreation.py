@@ -24,10 +24,14 @@ def dtype_check(df, types):
         try:
             assert df[col].dtype == types[col]
         except AssertionError:
-            print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
-                  + str(df['file'].head(1).values.tolist()[0]))
-            print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
-
+            if df[col].dtype != 'object':
+                print('more specific dtype')
+                pass
+            else:
+                print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
+                      + str(df['file'].head(1).values.tolist()[0]))
+                print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
+                print(df[col])
 
 def get_waveform_data(file):
     df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--',
