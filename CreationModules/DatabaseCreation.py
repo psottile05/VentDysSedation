@@ -33,12 +33,62 @@ def dtype_check(df, types):
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
                 print(df[col])
 
+
+def get_breath_data(file):
+    if isinstance(file['match_file'], type('String')):
+        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--',
+                         usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
+                                    'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
+                                    'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
+                                    'Ramp (ms)', 'VTI (ml)', 'VTE (ml)',
+                                    'ExpMinVol (l/min)', 'Insp flow (l/min)', 'Vt leak (ml)',
+                                    'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
+                                    'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
+                                    'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
+                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
+        df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
+                             'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
+                             'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
+                             'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
+                             'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
+                             'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
+                             'P mean (cmH2O)': 'mean_paw',
+                             'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
+                             'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
+                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'complaince', 'TI (s)': 't_insp'}, inplace = True)
+        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'coerce', dayfirst = True,
+                                         infer_datetime_format = True)
+        df['patient_ID'] = int(file['patient_id'])
+        df['file'] = file['match_file']
+        df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
+
+        types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
+                 'psupp': 'float64', 'file': 'object',
+                 'vent_mode': 'object', 'fio2': 'float64', 'tigger': 'float64', 'i:e': 'object', 'ramp': 'float64',
+                 'vti': 'float64', 'vte': 'float64', 'exp_minute_vol': 'float64', 'insp_flow': 'float64',
+                 'leak': 'float64',
+                 'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
+                 'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
+                 't_exp': 'float64',
+                 'complaince': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
+
+        date_check(df)
+        dtype_check(df, types)
+
+        df.set_index(['date_time'], inplace = True)
+
+    else:
+        print('missing breath file')
+        df = pd.DataFrame()
+
+    return df
+
+
 def get_waveform_data(file):
     df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
                                 'Volume (ml)'])
-    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], coerce = True, dayfirst = True,
-                                     infer_datetime_format = True)
+    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], dayfirst = True, errors = 'coerce')
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
@@ -69,75 +119,7 @@ def get_waveform_data(file):
     return df
 
 
-def get_breath_data(file):
-    if isinstance(file['match_file'], type('String')):
-        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--',
-                         usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
-                                    'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
-                                    'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
-                                    'Ramp (ms)', 'VTI (ml)', 'VTE (ml)',
-                                    'ExpMinVol (l/min)', 'Insp flow (l/min)', 'Vt leak (ml)',
-                                    'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
-                                    'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
-                                    'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
-                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
-        df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
-                             'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
-                             'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
-                             'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
-                             'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
-                             'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
-                             'P mean (cmH2O)': 'mean_paw',
-                             'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
-                             'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
-                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'complaince', 'TI (s)': 't_insp'}, inplace = True)
-        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], coerce = True, dayfirst = True,
-                                         infer_datetime_format = True)
-        df['patient_ID'] = int(file['patient_id'])
-        df['file'] = file['match_file']
-        df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
-
-        types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
-                 'psupp': 'float64', 'file': 'object',
-                 'vent_mode': 'object', 'fio2': 'float64', 'tigger': 'float64', 'i:e': 'object', 'ramp': 'float64',
-                 'vti': 'float64', 'vte': 'float64', 'exp_minute_vol': 'float64', 'insp_flow': 'float64',
-                 'leak': 'float64',
-                 'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
-                 'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
-                 't_exp': 'float64',
-                 'complaince': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
-
-        date_check(df)
-        dtype_check(df, types)
-
-    else:
-        print('missing breath file')
-        df = pd.DataFrame()
-
-    return df
-
-
-def breath_data_entry(df, match_file, bulk_breath):
-
-    results = breath_col.aggregate([{'$geoNear': {
-        'near': [df['date_time'].timestamp(), df['patient_ID']],
-        'query': {'patient_ID': df['patient_ID'], 'file': match_file},
-        'distanceField': 'distance',
-        'maxDistance': 100,
-        'limit': 1
-    }}])
-
-    for items in results:
-        df_dict = df.to_dict()
-        del df_dict['patient_ID']
-        del df_dict['file']
-
-        bulk_breath.find({'_id': items['_id']}).update({'$set': {'breath_settings': df_dict}})
-        # breath_col.find_one_and_update({'_id': items['_id']},
-        #                               {'$set': {'breath_settings': df_dict}})
-
-
-def waveform_data_entry(group):
+def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
     end_time = group.time.max()
     elapse_time = end_time - start_time
@@ -218,6 +200,7 @@ def waveform_data_entry(group):
         'dF/dP': group['dF/dP'].values.tolist()
     }
 
+
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
                + '/' + str(start_time),
@@ -226,6 +209,7 @@ def waveform_data_entry(group):
         'breath_num': group.breath.min(),
         'date_time': group.date_time.min().timestamp(),
         'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
+        'breath_setting': breath_df[breath_df.index == group.date_time.min()].to_dict(orient = 'records'),
         'breath_raw': raw_dict,
         'breath_character': breath_dict,
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')

@@ -14,6 +14,7 @@ import pymongo
 import datetime
 import re
 import gevent
+import numba
 from gevent.lock import Semaphore
 
 pd.set_option('max_columns', 40)
@@ -45,12 +46,13 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(3))
 
 
 def get_waveform(file, semaphore):
     with semaphore:
         wave_df = DBCreate.get_waveform_data(file)
+
         breath_col.insert_many(
             json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry).to_json(orient = 'records')),
             ordered = False)
@@ -68,11 +70,32 @@ def get_breath(file, semaphore):
         input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
 
-wave_greenlets = [gevent.spawn(get_waveform, file, Semaphore(100)) for file in files]
-breath_greenlets = [gevent.spawn(get_breath, file, Semaphore(100)) for file in files]
+def get_waveform_and_breath(file, semaphore):
+    with semaphore:
+        breath_df = DBCreate.get_breath_data(file)
+        breath_df = breath_df.resample('1s', fill_method = 'pad', limit = 60)
 
-gevent.joinall(wave_greenlets)
-gevent.joinall(breath_greenlets)
+        wave_df = DBCreate.get_waveform_data(file)
+
+        breath_col.insert_many(
+            json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry, breath_df = breath_df).to_json(
+                orient = 'records')), ordered = False)
+        input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+        input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+
+
+for file in files:
+    get_waveform_and_breath(file, Semaphore(100))
+
+# wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath(file, Semaphore(100)) for file in files)]
+
+
+
+# wave_greenlets = [gevent.spawn(get_waveform, file, Semaphore(100)) for file in files]
+# breath_greenlets = [gevent.spawn(get_breath, file, Semaphore(100)) for file in files]
+
+# gevent.joinall(wave_greenlets)
+# gevent.joinall(breath_greenlets)
 
 # print(breath_col.find_one({'breath_settings': {'$exists': 1}}))
 print('done')
