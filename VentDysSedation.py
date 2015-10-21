@@ -61,10 +61,11 @@ def get_waveform_and_breath(file, semaphore):
         input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
 
-for file in files:
-    print(file)
-    get_waveform_and_breath(file, Semaphore(100))
+# or file in files:
+#    print(file)
+#    get_waveform_and_breath(file, Semaphore(100))
 
-wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath(file, Semaphore(100)) for file in files)]
+wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 gevent.joinall(wave_and_breath_greenlets)
+
 print('done')
