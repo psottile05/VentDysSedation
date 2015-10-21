@@ -4,6 +4,7 @@ from pymongo import MongoClient, bulk
 import numpy as np
 import pandas as pd
 import re
+import json
 import scipy.signal as sig
 import datetime
 
@@ -200,6 +201,14 @@ def waveform_data_entry(group, breath_df):
         'dF/dP': group['dF/dP'].values.tolist()
     }
 
+    breath_setting = breath_df[breath_df.index == group.date_time.min()]
+    breath_setting.drop(['patient_ID'], axis = 1, inplace = True)
+    breath_setting_temp = breath_setting.to_dict(orient = 'records')
+
+    if len(breath_setting_temp) > 0:
+        breath_setting = breath_setting_temp[0]
+    else:
+        breath_setting = {}
 
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
@@ -209,7 +218,7 @@ def waveform_data_entry(group, breath_df):
         'breath_num': group.breath.min(),
         'date_time': group.date_time.min().timestamp(),
         'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
-        'breath_setting': breath_df[breath_df.index == group.date_time.min()].to_dict(orient = 'records'),
+        'breath_settings': breath_setting,
         'breath_raw': raw_dict,
         'breath_character': breath_dict,
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
