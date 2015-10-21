@@ -50,8 +50,6 @@ files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
 def get_waveform_and_breath(file, semaphore):
     with semaphore:
         breath_df = DBCreate.get_breath_data(file)
-        breath_df = breath_df.resample('1s', fill_method = 'pad', limit = 30)
-
         wave_df = DBCreate.get_waveform_data(file)
 
         breath_col.insert_many(
