@@ -61,7 +61,7 @@ def get_breath_data(file):
                                          infer_datetime_format = True)
         df['patient_ID'] = int(file['patient_id'])
         df['file'] = file['match_file']
-        df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
+        df.drop(['Date', 'HH:MM:SS', 'patient_ID'], axis = 1, inplace = True)
 
         types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
                  'psupp': 'float64', 'file': 'object',
@@ -202,7 +202,6 @@ def waveform_data_entry(group, breath_df):
     }
 
     breath_setting = breath_df[breath_df.index == group.date_time.min()]
-    breath_setting.drop(['patient_ID'], axis = 1, inplace = True)
     breath_setting_temp = breath_setting.to_dict(orient = 'records')
 
     if len(breath_setting_temp) > 0:

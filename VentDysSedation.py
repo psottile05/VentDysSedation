@@ -44,12 +44,12 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
 
 def get_waveform_and_breath(file, semaphore):
     with semaphore:
         breath_df = DBCreate.get_breath_data(file)
-        breath_df = breath_df.resample('1s', fill_method = 'pad', limit = 60)
+        breath_df = breath_df.resample('1s', fill_method = 'pad', limit = 30)
 
         wave_df = DBCreate.get_waveform_data(file)
 
@@ -65,12 +65,4 @@ for file in files:
 
 # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath(file, Semaphore(100)) for file in files)]
 
-
-
-# wave_greenlets = [gevent.spawn(get_waveform, file, Semaphore(100)) for file in files]
-# breath_greenlets = [gevent.spawn(get_breath, file, Semaphore(100)) for file in files]
-
-
-for items in breath_col.find({'breath_settings': {'$exists': 1}}, {'breath_settings.peep': 1}).limit(5):
-    print(items)
 print('done')
