@@ -77,6 +77,7 @@ def get_breath_data(file):
         dtype_check(df, types)
 
         df.set_index(['date_time'], inplace = True)
+        df = df.resample('1s', fill_method = 'pad', limit = 30)
 
     else:
         print('missing breath file')
