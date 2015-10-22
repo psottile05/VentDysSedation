@@ -1,12 +1,11 @@
 __author__ = 'sottilep'
 
-from pymongo import MongoClient, bulk
+from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 import re
-import json
+import numba
 import scipy.signal as sig
-import datetime
 
 client = MongoClient()
 db = client.VentDB
@@ -131,7 +130,6 @@ def get_waveform_data(file):
     dtype_check(df, types)
 
     return df
-
 
 def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
