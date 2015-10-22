@@ -48,7 +48,7 @@ files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
 
 
 def get_waveform_and_breath(file, semaphore):
-    with semaphore:
+    # with semaphore:
         breath_df = DBCreate.get_breath_data(file)
         wave_df = DBCreate.get_waveform_data(file)
 
@@ -58,12 +58,10 @@ def get_waveform_and_breath(file, semaphore):
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
         input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
-
-# or file in files:
-#    print(file)
-#    get_waveform_and_breath(file, Semaphore(100))
-
-wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
-gevent.joinall(wave_and_breath_greenlets)
+or file in files:
+print(file)
+get_waveform_and_breath(file, Semaphore(
+    100))  # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
+#gevent.joinall(wave_and_breath_greenlets)
 
 print('done')

@@ -35,7 +35,7 @@ def dtype_check(df, types):
                 print(df[col])
 
 
-def align_breath(breath_df)
+def align_breath(group, breath_df):
     breath_setting = breath_df[breath_df.index == group.date_time.min()]
     breath_setting_temp = breath_setting.to_dict(orient = 'records')
 
@@ -214,7 +214,7 @@ def waveform_data_entry(group, breath_df):
         'dF/dP': group['dF/dP'].values.tolist()
     }
 
-    breath_setting = align_breath(breath_df)
+    breath_setting = align_breath(group, breath_df)
 
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
