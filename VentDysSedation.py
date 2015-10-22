@@ -52,7 +52,8 @@ def get_waveform_and_breath(file, semaphore):
     wave_df = DBCreate.get_waveform_data(file)
 
     breath_col.insert_many(
-        json.loads(wave_df.groupby('breath').apply(DBCreate.waveform_data_entry, breath_df = breath_df).to_json(
+        json.loads(
+            wave_df.groupby('breath', sort = False).apply(DBCreate.waveform_data_entry, breath_df = breath_df).to_json(
             orient = 'records')), ordered = False)
     input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
