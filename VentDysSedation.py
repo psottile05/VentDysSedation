@@ -1,8 +1,7 @@
 __author__ = 'sottilep'
 
-from gevent import monkey
-
-monkey.patch_all()
+# from gevent import monkey
+# monkey.patch_all()
 
 from pymongo import MongoClient
 from CreationModules import FileSearch as FS
