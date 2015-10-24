@@ -1,11 +1,11 @@
 __author__ = 'sottilep'
 
-from pymongo import MongoClient, bulk
+from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 import re
+import numba
 import scipy.signal as sig
-import datetime
 
 client = MongoClient()
 db = client.VentDB
@@ -33,12 +33,76 @@ def dtype_check(df, types):
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
                 print(df[col])
 
+
+def align_breath(group, breath_df):
+    breath_setting = breath_df[breath_df.index == group.date_time.min()]
+    breath_setting_temp = breath_setting.to_dict(orient = 'records')
+
+    if len(breath_setting_temp) > 0:
+        breath_setting = breath_setting_temp[0]
+    else:
+        breath_setting = {}
+
+    return breath_setting
+
+
+def get_breath_data(file):
+    if isinstance(file['match_file'], type('String')):
+        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--', engine = 'c',
+                         usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
+                                    'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
+                                    'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
+                                    'Ramp (ms)', 'VTI (ml)', 'VTE (ml)',
+                                    'ExpMinVol (l/min)', 'Insp flow (l/min)', 'Vt leak (ml)',
+                                    'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
+                                    'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
+                                    'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
+                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
+        df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
+                             'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
+                             'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
+                             'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
+                             'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
+                             'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
+                             'P mean (cmH2O)': 'mean_paw',
+                             'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
+                             'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
+                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
+        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                         format = '%d.%m.%y %H:%M:%S')
+        df['patient_ID'] = int(file['patient_id'])
+        df['file'] = file['match_file']
+        df.drop(['Date', 'HH:MM:SS', 'patient_ID'], axis = 1, inplace = True)
+
+        types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
+                 'psupp': 'float64', 'file': 'object',
+                 'vent_mode': 'object', 'fio2': 'float64', 'tigger': 'float64', 'i:e': 'object', 'ramp': 'float64',
+                 'vti': 'float64', 'vte': 'float64', 'exp_minute_vol': 'float64', 'insp_flow': 'float64',
+                 'leak': 'float64',
+                 'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
+                 'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
+                 't_exp': 'float64',
+                 'compliance': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
+
+        date_check(df)
+        dtype_check(df, types)
+
+        df.set_index(['date_time'], inplace = True)
+        df = df.resample('1s', fill_method = 'pad', limit = 30)
+
+    else:
+        print('missing breath file')
+        df = pd.DataFrame()
+
+    return df
+
+
 def get_waveform_data(file):
-    df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--',
+    df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--', engine = 'c',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
                                 'Volume (ml)'])
-    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], coerce = True, dayfirst = True,
-                                     infer_datetime_format = True)
+    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                     format = '%d.%m.%y %H:%M:%S')
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
@@ -69,90 +133,28 @@ def get_waveform_data(file):
     return df
 
 
-def get_breath_data(file):
-    if isinstance(file['match_file'], type('String')):
-        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--',
-                         usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
-                                    'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
-                                    'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
-                                    'Ramp (ms)', 'VTI (ml)', 'VTE (ml)',
-                                    'ExpMinVol (l/min)', 'Insp flow (l/min)', 'Vt leak (ml)',
-                                    'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
-                                    'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
-                                    'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
-                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
-        df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
-                             'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
-                             'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
-                             'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
-                             'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
-                             'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
-                             'P mean (cmH2O)': 'mean_paw',
-                             'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
-                             'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
-                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'complaince', 'TI (s)': 't_insp'}, inplace = True)
-        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], coerce = True, dayfirst = True,
-                                         infer_datetime_format = True)
-        df['patient_ID'] = int(file['patient_id'])
-        df['file'] = file['match_file']
-        df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
-
-        types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
-                 'psupp': 'float64', 'file': 'object',
-                 'vent_mode': 'object', 'fio2': 'float64', 'tigger': 'float64', 'i:e': 'object', 'ramp': 'float64',
-                 'vti': 'float64', 'vte': 'float64', 'exp_minute_vol': 'float64', 'insp_flow': 'float64',
-                 'leak': 'float64',
-                 'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
-                 'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
-                 't_exp': 'float64',
-                 'complaince': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
-
-        date_check(df)
-        dtype_check(df, types)
-
-    else:
-        print('missing breath file')
-        df = pd.DataFrame()
-
-    return df
-
-
-def breath_data_entry(df, match_file, bulk_breath):
-
-    results = breath_col.aggregate([{'$geoNear': {
-        'near': [df['date_time'].timestamp(), df['patient_ID']],
-        'query': {'patient_ID': df['patient_ID'], 'file': match_file},
-        'distanceField': 'distance',
-        'maxDistance': 100,
-        'limit': 1
-    }}])
-
-    for items in results:
-        df_dict = df.to_dict()
-        del df_dict['patient_ID']
-        del df_dict['file']
-
-        bulk_breath.find({'_id': items['_id']}).update({'$set': {'breath_settings': df_dict}})
-        # breath_col.find_one_and_update({'_id': items['_id']},
-        #                               {'$set': {'breath_settings': df_dict}})
-
-
-def waveform_data_entry(group):
+@profile
+def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
     end_time = group.time.max()
     elapse_time = end_time - start_time
-    if group[group.status == 1].time.max() is not np.nan:
+
+    if group.status.any() > 0:
         end_insp_time = group[group.status > 0].time.max()
     else:
         end_insp_time = group[group.status == 0].time.min()
 
-    calc_dict = {'dF/dV_insp_max': group[np.abs(group['dF/dV'] == np.inf) & (group.time <= end_insp_time)].time.values,
-                 'dP/dV_insp_max': group[np.abs(group['dP/dV'] == np.inf) & (group.time <= end_insp_time)].time.values,
-                 'dF/dP_insp_max': group[np.abs(group['dF/dP'] == np.inf) & (group.time <= end_insp_time)].time.values,
+    insp_df = group[group.time < end_insp_time]
+    exp_df = group[group.time > end_insp_time]
+    end_insp_df = group[group.time == end_insp_time]
 
-                 'dF/dV_exp_max': group[np.abs(group['dF/dV'] == np.inf) & (group.time >= end_insp_time)].time.values,
-                 'dP/dV_exp_max': group[np.abs(group['dP/dV'] == np.inf) & (group.time >= end_insp_time)].time.values,
-                 'dF/dP_exp_max': group[np.abs(group['dF/dP'] == np.inf) & (group.time >= end_insp_time)].time.values,
+    calc_dict = {'dF/dV_insp_max': insp_df[np.abs(insp_df['dF/dV'] == np.inf)].time.values,
+                 'dP/dV_insp_max': insp_df[np.abs(insp_df['dP/dV'] == np.inf)].time.values,
+                 'dF/dP_insp_max': insp_df[np.abs(insp_df['dF/dP'] == np.inf)].time.values,
+
+                 'dF/dV_exp_max': exp_df[np.abs(exp_df['dF/dV'] == np.inf)].time.values,
+                 'dP/dV_exp_max': exp_df[np.abs(exp_df['dP/dV'] == np.inf)].time.values,
+                 'dF/dP_exp_max': exp_df[np.abs(exp_df['dF/dP'] == np.inf)].time.values,
                  }
 
     normalize_list = ['dF/dV_insp_max', 'dP/dV_insp_max', 'dF/dP_insp_max', 'dF/dV_exp_max', 'dP/dV_exp_max',
@@ -179,19 +181,19 @@ def waveform_data_entry(group):
         'elapse_time': end_time - start_time,
 
         'peak_paw': group.paw.max(),
-        'mean_insp_paw': group[group.time <= end_insp_time].paw.mean(),
-        'end_insp_paw': group[group.time == end_insp_time].paw.max(),
-        'mean_exp_paw': group[group.time >= end_insp_time].paw.mean(),
+        'mean_insp_paw': insp_df.paw.mean(),
+        'end_insp_paw': end_insp_df.paw.max(),
+        'mean_exp_paw': exp_df.paw.mean(),
         'min_paw': group.paw.min(),
 
         'peak_flow': group.flow.max(),
-        'mean_insp_flow': group[group.time <= end_insp_time].flow.mean(),
-        'end_insp_flow': group[group.time == end_insp_time].flow.min(),
-        'mean_exp_flow': group[group.time >= end_insp_time].flow.mean(),
+        'mean_insp_flow': insp_df.flow.mean(),
+        'end_insp_flow': end_insp_df.flow.min(),
+        'mean_exp_flow': exp_df.flow.mean(),
         'min_flow': group.flow.min(),
 
         'peak_vol': group.vol.max(),
-        'end_insp_vol': group[group.time == end_insp_time].vol.min(),
+        'end_insp_vol': end_insp_df.vol.min(),
         'min_vol': group.vol.min(),
 
         'n_dF/dV_insp_max': int(calc_inner_df[calc_inner_df['dF/dV_insp_max'] > 0]['dF/dV_insp_max'].count()),
@@ -204,28 +206,31 @@ def waveform_data_entry(group):
     }
 
     raw_dict = {
-        'time': group.time.values.tolist(),
-        'breath': group.breath.values.tolist(),
-        'status': group.status.values.tolist(),
-        'paw': group.paw.values.tolist(),
-        'flow': group.flow.values.tolist(),
-        'vol': group.vol.values.tolist(),
-        'sm_paw': group.sm_paw.values.tolist(),
-        'sm_flow': group.sm_flow.values.tolist(),
-        'sm_vol': group.sm_vol.values.tolist(),
-        'dF/dV': group['dF/dV'].values.tolist(),
-        'dP/dV': group['dP/dV'].values.tolist(),
-        'dF/dP': group['dF/dP'].values.tolist()
+        'time': group.time.values,
+        'breath': group.breath.values,
+        'status': group.status.values,
+        'paw': group.paw.values,
+        'flow': group.flow.values,
+        'vol': group.vol.values,
+        'sm_paw': group.sm_paw.values,
+        'sm_flow': group.sm_flow.values,
+        'sm_vol': group.sm_vol.values,
+        'dF/dV': group['dF/dV'].values,
+        'dP/dV': group['dP/dV'].values,
+        'dF/dP': group['dF/dP'].values
     }
+
+    breath_setting = align_breath(group, breath_df)
 
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
                + '/' + str(start_time),
         'patient_ID': int(group.patient_ID.head(1)),
-        'file': group.file.head(1).values.tolist()[0],
+        'file': group.file.head(1).values[0],
         'breath_num': group.breath.min(),
         'date_time': group.date_time.min().timestamp(),
         'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
+        'breath_settings': breath_setting,
         'breath_raw': raw_dict,
         'breath_character': breath_dict,
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
