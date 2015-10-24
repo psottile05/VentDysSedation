@@ -48,7 +48,7 @@ def align_breath(group, breath_df):
 
 def get_breath_data(file):
     if isinstance(file['match_file'], type('String')):
-        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--',
+        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--', engine = 'c',
                          usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
                                     'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
                                     'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
@@ -67,9 +67,9 @@ def get_breath_data(file):
                              'P mean (cmH2O)': 'mean_paw',
                              'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
                              'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
-                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'complaince', 'TI (s)': 't_insp'}, inplace = True)
-        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'coerce', dayfirst = True,
-                                         infer_datetime_format = True)
+                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
+        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                         format = '%d.%m.%y %H:%M:%S')
         df['patient_ID'] = int(file['patient_id'])
         df['file'] = file['match_file']
         df.drop(['Date', 'HH:MM:SS', 'patient_ID'], axis = 1, inplace = True)
@@ -82,7 +82,7 @@ def get_breath_data(file):
                  'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
                  'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
                  't_exp': 'float64',
-                 'complaince': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
+                 'compliance': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
 
         date_check(df)
         dtype_check(df, types)
@@ -98,10 +98,11 @@ def get_breath_data(file):
 
 
 def get_waveform_data(file):
-    df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--',
+    df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--', engine = 'c',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
                                 'Volume (ml)'])
-    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], dayfirst = True, errors = 'coerce')
+    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                     format = '%d.%m.%y %H:%M:%S')
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
@@ -130,6 +131,7 @@ def get_waveform_data(file):
     dtype_check(df, types)
 
     return df
+
 
 def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
