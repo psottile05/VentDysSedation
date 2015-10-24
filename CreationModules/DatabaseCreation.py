@@ -133,7 +133,7 @@ def get_waveform_data(file):
     return df
 
 
-@profile
+# @profile
 def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
     end_time = group.time.max()
@@ -148,13 +148,13 @@ def waveform_data_entry(group, breath_df):
     exp_df = group[group.time > end_insp_time]
     end_insp_df = group[group.time == end_insp_time]
 
-    calc_dict = {'dF/dV_insp_max': insp_df[np.abs(group['dF/dV'] == np.inf)].time.values,
-                 'dP/dV_insp_max': insp_df[np.abs(group['dP/dV'] == np.inf)].time.values,
-                 'dF/dP_insp_max': insp_df[np.abs(group['dF/dP'] == np.inf)].time.values,
+    calc_dict = {'dF/dV_insp_max': insp_df[np.abs(insp_df['dF/dV'] == np.inf)].time.values,
+                 'dP/dV_insp_max': insp_df[np.abs(insp_df['dP/dV'] == np.inf)].time.values,
+                 'dF/dP_insp_max': insp_df[np.abs(insp_df['dF/dP'] == np.inf)].time.values,
 
-                 'dF/dV_exp_max': exp_df[np.abs(group['dF/dV'] == np.inf)].time.values,
-                 'dP/dV_exp_max': exp_df[np.abs(group['dP/dV'] == np.inf)].time.values,
-                 'dF/dP_exp_max': exp_df[np.abs(group['dF/dP'] == np.inf)].time.values,
+                 'dF/dV_exp_max': exp_df[np.abs(exp_df['dF/dV'] == np.inf)].time.values,
+                 'dP/dV_exp_max': exp_df[np.abs(exp_df['dP/dV'] == np.inf)].time.values,
+                 'dF/dP_exp_max': exp_df[np.abs(exp_df['dF/dP'] == np.inf)].time.values,
                  }
 
     normalize_list = ['dF/dV_insp_max', 'dP/dV_insp_max', 'dF/dP_insp_max', 'dF/dV_exp_max', 'dP/dV_exp_max',
