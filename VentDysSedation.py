@@ -44,7 +44,7 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
 
 
 def get_waveform_and_breath(file, semaphore):
@@ -70,4 +70,4 @@ for file in files:
 #wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 #gevent.joinall(wave_and_breath_greenlets)
 
-print('done')
+print(breath_col.find_one())

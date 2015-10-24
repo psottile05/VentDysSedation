@@ -200,18 +200,18 @@ def waveform_data_entry(group, breath_df):
     }
 
     raw_dict = {
-        'time': group.time.values.tolist(),
-        'breath': group.breath.values.tolist(),
-        'status': group.status.values.tolist(),
-        'paw': group.paw.values.tolist(),
-        'flow': group.flow.values.tolist(),
-        'vol': group.vol.values.tolist(),
-        'sm_paw': group.sm_paw.values.tolist(),
-        'sm_flow': group.sm_flow.values.tolist(),
-        'sm_vol': group.sm_vol.values.tolist(),
-        'dF/dV': group['dF/dV'].values.tolist(),
-        'dP/dV': group['dP/dV'].values.tolist(),
-        'dF/dP': group['dF/dP'].values.tolist()
+        'time': group.time.values,
+        'breath': group.breath.values,
+        'status': group.status.values,
+        'paw': group.paw.values,
+        'flow': group.flow.values,
+        'vol': group.vol.values,
+        'sm_paw': group.sm_paw.values,
+        'sm_flow': group.sm_flow.values,
+        'sm_vol': group.sm_vol.values,
+        'dF/dV': group['dF/dV'].values,
+        'dP/dV': group['dP/dV'].values,
+        'dF/dP': group['dF/dP'].values
     }
 
     breath_setting = align_breath(group, breath_df)
@@ -220,7 +220,7 @@ def waveform_data_entry(group, breath_df):
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
                + '/' + str(start_time),
         'patient_ID': int(group.patient_ID.head(1)),
-        'file': group.file.head(1).values.tolist()[0],
+        'file': group.file.head(1).values[0],
         'breath_num': group.breath.min(),
         'date_time': group.date_time.min().timestamp(),
         'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
