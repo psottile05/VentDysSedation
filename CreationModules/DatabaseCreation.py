@@ -139,7 +139,7 @@ def waveform_data_entry(group, breath_df):
     end_time = group.time.max()
     elapse_time = end_time - start_time
 
-    if group.stats.any() > 0:
+    if group.status.any() > 0:
         end_insp_time = group[group.status > 0].time.max()
     else:
         end_insp_time = group[group.status == 0].time.min()
