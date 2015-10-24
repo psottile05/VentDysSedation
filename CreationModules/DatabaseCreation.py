@@ -133,6 +133,7 @@ def get_waveform_data(file):
     return df
 
 
+@profile
 def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
     end_time = group.time.max()
@@ -142,13 +143,17 @@ def waveform_data_entry(group, breath_df):
     else:
         end_insp_time = group[group.status == 0].time.min()
 
-    calc_dict = {'dF/dV_insp_max': group[np.abs(group['dF/dV'] == np.inf) & (group.time <= end_insp_time)].time.values,
-                 'dP/dV_insp_max': group[np.abs(group['dP/dV'] == np.inf) & (group.time <= end_insp_time)].time.values,
-                 'dF/dP_insp_max': group[np.abs(group['dF/dP'] == np.inf) & (group.time <= end_insp_time)].time.values,
+    insp_df = group[group.time < end_insp_time]
+    exp_df = group[group.time > end_insp_time]
+    end_insp_df = group[group.time == end_insp_time]
 
-                 'dF/dV_exp_max': group[np.abs(group['dF/dV'] == np.inf) & (group.time >= end_insp_time)].time.values,
-                 'dP/dV_exp_max': group[np.abs(group['dP/dV'] == np.inf) & (group.time >= end_insp_time)].time.values,
-                 'dF/dP_exp_max': group[np.abs(group['dF/dP'] == np.inf) & (group.time >= end_insp_time)].time.values,
+    calc_dict = {'dF/dV_insp_max': insp_df[np.abs(group['dF/dV'] == np.inf)].time.values,
+                 'dP/dV_insp_max': insp_df[np.abs(group['dP/dV'] == np.inf)].time.values,
+                 'dF/dP_insp_max': insp_df[np.abs(group['dF/dP'] == np.inf)].time.values,
+
+                 'dF/dV_exp_max': exp_df[np.abs(group['dF/dV'] == np.inf)].time.values,
+                 'dP/dV_exp_max': exp_df[np.abs(group['dP/dV'] == np.inf)].time.values,
+                 'dF/dP_exp_max': exp_df[np.abs(group['dF/dP'] == np.inf)].time.values,
                  }
 
     normalize_list = ['dF/dV_insp_max', 'dP/dV_insp_max', 'dF/dP_insp_max', 'dF/dV_exp_max', 'dP/dV_exp_max',
@@ -175,19 +180,19 @@ def waveform_data_entry(group, breath_df):
         'elapse_time': end_time - start_time,
 
         'peak_paw': group.paw.max(),
-        'mean_insp_paw': group[group.time <= end_insp_time].paw.mean(),
-        'end_insp_paw': group[group.time == end_insp_time].paw.max(),
-        'mean_exp_paw': group[group.time >= end_insp_time].paw.mean(),
+        'mean_insp_paw': insp_df.paw.mean(),
+        'end_insp_paw': end_insp_df.paw.max(),
+        'mean_exp_paw': exp_df.paw.mean(),
         'min_paw': group.paw.min(),
 
         'peak_flow': group.flow.max(),
-        'mean_insp_flow': group[group.time <= end_insp_time].flow.mean(),
-        'end_insp_flow': group[group.time == end_insp_time].flow.min(),
-        'mean_exp_flow': group[group.time >= end_insp_time].flow.mean(),
+        'mean_insp_flow': insp_df.flow.mean(),
+        'end_insp_flow': end_insp_df.flow.min(),
+        'mean_exp_flow': exp_df.flow.mean(),
         'min_flow': group.flow.min(),
 
         'peak_vol': group.vol.max(),
-        'end_insp_vol': group[group.time == end_insp_time].vol.min(),
+        'end_insp_vol': end_insp_df.vol.min(),
         'min_vol': group.vol.min(),
 
         'n_dF/dV_insp_max': int(calc_inner_df[calc_inner_df['dF/dV_insp_max'] > 0]['dF/dV_insp_max'].count()),
