@@ -1,7 +1,7 @@
 __author__ = 'sottilep'
 
 
-def data_collecter(patient):
+def data_collect(patient):
     from pymongo import MongoClient
     import pandas as pd
 
