@@ -1,10 +1,9 @@
 __author__ = 'sottilep'
 
+from pymongo import MongoClient
+import pandas as pd
 
 def data_collect(patient):
-    from pymongo import MongoClient
-    import pandas as pd
-
     client = MongoClient()
     print(client.database_names())
 
@@ -29,3 +28,15 @@ def data_collect(patient):
     rn_df['RASS'] = rn_df['RN_entry'].apply(lambda x: x[0]['RASS'])
 
     return breath_df, rn_df
+
+
+def collection_freq(breath_df, win):
+    breath_df['ds_rolling'] = pd.rolling_sum(breath_df['analysis.ds'], window = 60 * win)
+    breath_df['tot_rolling'] = pd.rolling_count(breath_df['analysis.ds'], window = 60 * win)
+    breath_df['ds_freq'] = breath_df.ds_rolling / breath_df.tot_rolling
+
+    return breath_df
+
+
+breath_df, rn_df = data_collect('P104')
+breath_df = collection_freq(breath_df, 10)
