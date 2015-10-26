@@ -22,8 +22,8 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-input_log.drop()
-breath_col.drop()
+# input_log.drop()
+# breath_col.drop()
 
 input_log.create_index([('type', pymongo.TEXT)])
 input_log.create_index([('loaded', pymongo.ASCENDING)])
@@ -44,7 +44,7 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}))
 
 
 def get_waveform_and_breath(file, semaphore):
@@ -52,8 +52,6 @@ def get_waveform_and_breath(file, semaphore):
     breath_df = DBCreate.get_breath_data(file)
     wave_df = DBCreate.get_waveform_data(file)
 
-    # test = wave_df.groupby('breath', sort = False).apply(pd.DataFrame.as_matrix).apply(np.core.records.fromrecords,
-    #  names=list(wave_df.columns))
 
     breath_col.insert_many(
         json.loads(
