@@ -37,7 +37,7 @@ def collection_freq(breath_df, win):
                                              min_periods = 1)
         breath_df[ds_type + '_tot_rolling'] = pd.rolling_count(breath_df['analysis.' + ds_type], window = 60 * win,
                                                               center = True)
-        breath_df[ds_type + '_ds_freq'] = breath_df[ds_type + '_rolling'] / breath_df[ds_type + '_tot_rolling']
+        breath_df[ds_type + '_freq'] = breath_df[ds_type + '_rolling'] / breath_df[ds_type + '_tot_rolling']
         print(breath_df.columns)
     return breath_df
 
@@ -47,7 +47,7 @@ def rolling_rass_combi(breath_df, rn_df):
     combi_df.drop(
         ['analysis.ds', 'analysis.fl', 'analysis.ie', 'analysis.pl', 'analysis.pvt', 'RN_entry', 'patientID_l'],
         axis = 1, inplace = True)
-    combi_df.dropna(axis = 0, how = 'any', subset = ['ds_freq'], inplace = True)
+    combi_df.dropna(axis = 0, how = 'all', subset = ['ds_freq', 'ie_freq', 'pl_freq'], inplace = True)
 
     return combi_df
 
