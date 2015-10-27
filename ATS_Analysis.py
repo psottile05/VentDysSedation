@@ -31,10 +31,13 @@ def data_collect(patient):
 
 
 def collection_freq(breath_df, win):
-    breath_df['ds_rolling'] = pd.rolling_sum(breath_df['analysis.ie'], window = 60 * win, center = True,
+    for ds_type in ['ds', 'pl', 'ie']:
+        breath_df[ds_type + '_rolling'] = pd.rolling_sum(breath_df['analysis.' + ds_type], window = 60 * win,
+                                                         center = True,
                                              min_periods = 1)
-    breath_df['tot_rolling'] = pd.rolling_count(breath_df['analysis.ie'], window = 60 * win, center = True)
-    breath_df['ds_freq'] = breath_df.ds_rolling / breath_df.tot_rolling
+        breath_df[ds_type + 'tot_rolling'] = pd.rolling_count(breath_df['analysis.' + ds_type], window = 60 * win,
+                                                              center = True)
+        breath_df[ds_type + 'ds_freq'] = breath_df.ds_rolling / breath_df.tot_rolling
 
     return breath_df
 
@@ -65,3 +68,4 @@ def get_data(patient_list, win_range):
               (combi_df['ds_freq'].count()))
 
     return total_df
+
