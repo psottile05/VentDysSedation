@@ -37,7 +37,7 @@ def collection_freq(breath_df, win):
                                              min_periods = 1)
         breath_df[ds_type + 'tot_rolling'] = pd.rolling_count(breath_df['analysis.' + ds_type], window = 60 * win,
                                                               center = True)
-        breath_df[ds_type + 'ds_freq'] = breath_df.ds_rolling / breath_df.tot_rolling
+        breath_df[ds_type + 'ds_freq'] = breath_df.[ds_type + 'ds_rolling'] / breath_df[ds_type + 'tot_rolling']
         print(breath_df.columns)
     return breath_df
 
