@@ -44,6 +44,7 @@ def rolling_rass_combi(breath_df, rn_df):
         ['analysis.ds', 'analysis.fl', 'analysis.ie', 'analysis.pl', 'analysis.pvt', 'RN_entry', 'patientID_l'],
         axis = 1, inplace = True)
     combi_df.dropna(axis = 0, how = 'any', subset = ['ds_freq'], inplace = True)
+
     return combi_df
 
 
@@ -53,11 +54,12 @@ def get_data(patient_list, win):
         breath_df, rn_df = data_collect(items)
         breath_df = collection_freq(breath_df, win)
         combi_df = rolling_rass_combi(breath_df, rn_df)
-        combi_df['patientID'].fillna(method = 'ffill')
+        combi_df['patientID'].fillna(method = 'ffill', inplace = True)
 
         print(items, rn_df['RASS'].count(),
               rn_df[(rn_df.index >= breath_df.index.min()) & (rn_df.index <= breath_df.index.max())]['RASS'].count(),
               (combi_df['ds_freq'].count()))
 
         total_df = pd.concat([total_df, combi_df], axis = 0)
+
     return total_df
