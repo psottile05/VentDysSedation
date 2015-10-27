@@ -31,8 +31,9 @@ def data_collect(patient):
 
 
 def collection_freq(breath_df, win):
-    breath_df['ds_rolling'] = pd.rolling_sum(breath_df['analysis.ie'], window = 60 * win, min_periods = 1)
-    breath_df['tot_rolling'] = pd.rolling_count(breath_df['analysis.ie'], window = 60 * win)
+    breath_df['ds_rolling'] = pd.rolling_sum(breath_df['analysis.ie'], window = 60 * win, center = True,
+                                             min_periods = 1)
+    breath_df['tot_rolling'] = pd.rolling_count(breath_df['analysis.ie'], window = 60 * win, center = True)
     breath_df['ds_freq'] = breath_df.ds_rolling / breath_df.tot_rolling
 
     return breath_df
@@ -48,18 +49,19 @@ def rolling_rass_combi(breath_df, rn_df):
     return combi_df
 
 
-def get_data(patient_list, win):
+def get_data(patient_list, win_range):
     total_df = pd.DataFrame()
     for items in patient_list:
         breath_df, rn_df = data_collect(items)
-        breath_df = collection_freq(breath_df, win)
-        combi_df = rolling_rass_combi(breath_df, rn_df)
-        combi_df['patientID'].fillna(method = 'ffill', inplace = True)
+        for win in win_range:
+            breath_df = collection_freq(breath_df, win)
+            combi_df = rolling_rass_combi(breath_df, rn_df)
+            combi_df['patientID'].fillna(method = 'pad', inplace = True)
+            combi_df['win'] = win
+            total_df = pd.concat([total_df, combi_df], axis = 0)
 
         print(items, rn_df['RASS'].count(),
               rn_df[(rn_df.index >= breath_df.index.min()) & (rn_df.index <= breath_df.index.max())]['RASS'].count(),
               (combi_df['ds_freq'].count()))
-
-        total_df = pd.concat([total_df, combi_df], axis = 0)
 
     return total_df
