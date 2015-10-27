@@ -5,10 +5,10 @@ import pandas as pd
 
 def data_collect(patient):
     client = MongoClient()
-    print(client.database_names())
+    # print(client.database_names())
 
     db = client.VentDyssynchrony_db
-    print(db.collection_names())
+    #print(db.collection_names())
 
     breath_data = db.BreathData_collection
     rn_data = db.RNData_collection
@@ -47,16 +47,17 @@ def rolling_rass_combi(breath_df, rn_df):
     return combi_df
 
 
-'''
-breath_df, rn_df = data_collect('P110')
-breath_df = collection_freq(breath_df, 10)
-combi_df = rolling_rass_combi(breath_df, rn_df)
+def get_data(patient_list, win):
+    total_df = pd.DataFrame()
+    for items in patient_list:
+        breath_df, rn_df = data_collect(items)
+        breath_df = collection_freq(breath_df, win)
+        combi_df = rolling_rass_combi(breath_df, rn_df)
+        combi_df['patientID'].fillna(method = 'ffill')
 
+        print(items, rn_df['RASS'].count(),
+              rn_df[(rn_df.index >= breath_df.index.min()) & (rn_df.index <= breath_df.index.max())]['RASS'].count(),
+              (combi_df['ds_freq'].count()))
 
-print(combi_df)
-print(pd.notnull(combi_df['ds_freq']).any())
-print(combi_df['ds_freq'].count())
-
-print(rn_df['RASS'].count())
-print(rn_df[(rn_df.index >= breath_df.index.min())and(rn_df.index <= breath_df.index.max())]['RASS'].count())
-'''
+        total_df = pd.concat([total_df, combi_df], axis = 0)
+    return total_df
