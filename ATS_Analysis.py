@@ -129,6 +129,5 @@ def get_data(patient_list, win_range):
 
     return total_df
 
-
-total_df = get_data(['P110', 'P112', 'P113', 'P114', 'P115', 'P116', 'P117', 'P118', 'P119', 'P120'], [240])
-print(total_df.shape)
+# total_df = get_data(['P110', 'P112', 'P113', 'P114', 'P115', 'P116', 'P117', 'P118', 'P119', 'P120'], [240])
+# print(total_df.shape)
