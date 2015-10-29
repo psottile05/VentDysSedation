@@ -28,7 +28,7 @@ def data_collect(patient, patient_info):
 
     results = breath_data.find({'patientID': patient},
                                {'_id': 0, 'patientID': 1, 'start_time': 1, 'analysis': 1, 'vent_settings.PEEP': 1,
-                                'vent_settings.p_mean': 1, 'vent_settings.FiO2': 1}).limit(1)
+                                'vent_settings.p_mean': 1, 'vent_settings.FiO2': 1})
     breath_df = pd.io.json.json_normalize(results)
     breath_df.set_index(['start_time'], inplace = True)
     breath_df['patientID'] = breath_df['patientID'].str.lstrip('P').astype(int)
