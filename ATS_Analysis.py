@@ -146,6 +146,5 @@ def get_data(patient_list, win_range):
 
     return total_df
 
-
-total_df = get_data(['P110'], [240])
-print(total_df)
+# total_df = get_data(['P110'], [240])
+# print(total_df)
