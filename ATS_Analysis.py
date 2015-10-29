@@ -61,12 +61,13 @@ def data_collect(patient):
                             {'_id': 0, 'entry_time': 1, 'Lab_entry. ph arterial': 1, 'Lab_entry. po2 arterial': 1,
                              'Lab_entry. pco2 arterial': 1})
     lab_df = pd.DataFrame.from_dict(list(results))
-    lab_df['ph'] = lab_df['Lab_entry'].apply(lambda x: unpack_entry(x, ' ph arterial'))
-    lab_df['paO2'] = lab_df['Lab_entry'].apply(lambda x: unpack_entry(x, ' po2 arterial'))
-    lab_df['paCO2'] = lab_df['Lab_entry'].apply(lambda x: unpack_entry(x, ' pco2 arterial'))
-    lab_df.drop_duplicates(subset = 'entry_time', keep = 'first', inplace = True)
-    lab_df.set_index(['entry_time'], inplace = True, verify_integrity = True)
-    lab_df.drop(['Lab_entry'], axis = 1, inplace = True)
+    if lab_df.shape[0] != 0:
+        lab_df['ph'] = lab_df['Lab_entry'].apply(lambda x: unpack_entry(x, ' ph arterial'))
+        lab_df['paO2'] = lab_df['Lab_entry'].apply(lambda x: unpack_entry(x, ' po2 arterial'))
+        lab_df['paCO2'] = lab_df['Lab_entry'].apply(lambda x: unpack_entry(x, ' pco2 arterial'))
+        lab_df.drop_duplicates(subset = 'entry_time', keep = 'first', inplace = True)
+        lab_df.set_index(['entry_time'], inplace = True, verify_integrity = True)
+        lab_df.drop(['Lab_entry'], axis = 1, inplace = True)
 
     rt_df = rt_df.resample('1T', fill_method = 'bfill', limit = 120)
     lab_df = lab_df.resample('1T', fill_method = 'bfill', limit = 120)
