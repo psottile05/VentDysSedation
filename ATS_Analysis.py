@@ -42,20 +42,22 @@ def data_collect(patient):
     results = rn_data.find({'patientID': patient, 'RN_entry.RASS': {'$exists': 1}},
                            {'_id': 0, 'patientID': 1, 'entry_time': 1, 'RN_entry': 1})
     rn_df = pd.DataFrame.from_dict(list(results))
-    rn_df.drop_duplicates(subset = 'entry_time', keep = 'first', inplace = True)
-    rn_df.set_index(['entry_time'], inplace = True, verify_integrity = True)
-    rn_df['patientID'] = rn_df['patientID'].str.lstrip('P').astype(int)
-    rn_df['RASS'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'RASS'))
-    rn_df['SpO2'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'SpO2'))
-    rn_df.drop(['RN_entry'], axis = 1, inplace = True)
+    if rn_df.shape[0] != 0:
+        rn_df.drop_duplicates(subset = 'entry_time', keep = 'first', inplace = True)
+        rn_df.set_index(['entry_time'], inplace = True, verify_integrity = True)
+        rn_df['patientID'] = rn_df['patientID'].str.lstrip('P').astype(int)
+        rn_df['RASS'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'RASS'))
+        rn_df['SpO2'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'SpO2'))
+        rn_df.drop(['RN_entry'], axis = 1, inplace = True)
 
     results = rt_data.find({'patientID': patient, 'RT_entry.Plat': {'$exists': 1}},
                            {'_id': 0, 'patientID': 1, 'entry_time': 1, 'RT_entry': 1})
     rt_df = pd.DataFrame.from_dict(list(results))
-    rt_df.drop_duplicates(subset = 'entry_time', keep = 'first', inplace = True)
-    rt_df.set_index(['entry_time'], inplace = True, verify_integrity = True)
-    rt_df['plat'] = rt_df['RT_entry'].apply(lambda x: unpack_entry(x, 'Plat'))
-    rt_df.drop(['RT_entry', 'patientID'], axis = 1, inplace = True)
+    if rt_df.shape[0] != 0:
+        rt_df.drop_duplicates(subset = 'entry_time', keep = 'first', inplace = True)
+        rt_df.set_index(['entry_time'], inplace = True, verify_integrity = True)
+        rt_df['plat'] = rt_df['RT_entry'].apply(lambda x: unpack_entry(x, 'Plat'))
+        rt_df.drop(['RT_entry', 'patientID'], axis = 1, inplace = True)
 
     results = lab_data.find({'patientID': patient, 'Lab_entry. ph arterial': {'$exists': 1}},
                             {'_id': 0, 'entry_time': 1, 'Lab_entry. ph arterial': 1, 'Lab_entry. po2 arterial': 1,
