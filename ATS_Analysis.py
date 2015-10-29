@@ -25,6 +25,11 @@ def data_collect(patient):
     rn_data = db.RNData_collection
     rt_data = db.RTData_collection
     lab_data = db.LabData_collection
+    patient_data = db.PatientData_collection
+
+    results = patient_data.find({'_id': patient}, {'nmb': 1, })
+    patient_df = pd.DataFrame.from_dict(list(results))
+    #print(patient_df.head())
 
     results = breath_data.find({'patientID': patient},
                                {'_id': 0, 'patientID': 1, 'start_time': 1, 'analysis': 1, 'vent_settings.PEEP': 1,
@@ -129,5 +134,5 @@ def get_data(patient_list, win_range):
 
     return total_df
 
-# total_df = get_data(['P110', 'P112', 'P113', 'P114', 'P115', 'P116', 'P117', 'P118', 'P119', 'P120'], [240])
-# print(total_df.shape)
+# total_df = get_data(['P110'], [240])
+#print(total_df)
