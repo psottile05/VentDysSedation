@@ -133,7 +133,6 @@ def get_waveform_data(file):
     return df
 
 
-@profile
 def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
     end_time = group.time.max()

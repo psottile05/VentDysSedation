@@ -14,7 +14,7 @@ def unpack_entry(data, type):
         return np.nan
 
 
-def data_collect(patient):
+def data_collect(patient, patient_info):
     client = MongoClient()
     # print(client.database_names())
 
@@ -25,15 +25,10 @@ def data_collect(patient):
     rn_data = db.RNData_collection
     rt_data = db.RTData_collection
     lab_data = db.LabData_collection
-    patient_data = db.PatientData_collection
-
-    results = patient_data.find({'_id': patient}, {'nmb': 1, })
-    patient_df = pd.DataFrame.from_dict(list(results))
-    #print(patient_df.head())
 
     results = breath_data.find({'patientID': patient},
                                {'_id': 0, 'patientID': 1, 'start_time': 1, 'analysis': 1, 'vent_settings.PEEP': 1,
-                                'vent_settings.p_mean': 1, 'vent_settings.FiO2': 1})
+                                'vent_settings.p_mean': 1, 'vent_settings.FiO2': 1}).limit(1)
     breath_df = pd.io.json.json_normalize(results)
     breath_df.set_index(['start_time'], inplace = True)
     breath_df['patientID'] = breath_df['patientID'].str.lstrip('P').astype(int)
@@ -49,6 +44,14 @@ def data_collect(patient):
         rn_df['RASS'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'RASS'))
         rn_df['SpO2'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'SpO2'))
         rn_df.drop(['RN_entry'], axis = 1, inplace = True)
+
+    if patient_info['NMB'] == 1:
+        start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
+        for items in start_stop:
+            start, stop = items.strip('()').split(',')
+            start = pd.to_datetime(start)
+            stop = pd.to_datetime(stop)
+            rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
 
     results = rt_data.find({'patientID': patient, 'RT_entry.Plat': {'$exists': 1}},
                            {'_id': 0, 'patientID': 1, 'entry_time': 1, 'RT_entry': 1})
@@ -121,8 +124,14 @@ def rolling_rass_combi(breath_df, rn_df):
 
 def get_data(patient_list, win_range):
     total_df = pd.DataFrame()
+
+    patient_df = pd.read_csv('C:\Research_data\RawData\Demographic Data v2.csv', engine = 'c',
+                             usecols = ['Study ID', 'NMB', 'Start_End_NMB'])
+    patient_df.set_index(['Study ID'], inplace = True)
+
     for items in patient_list:
-        breath_df, rn_df = data_collect(items)
+        patient_info = patient_df.ix[int(items.lstrip('P'))]
+        breath_df, rn_df = data_collect(items, patient_info)
 
         for win in win_range:
             breath_df = collection_freq(breath_df, win)
@@ -137,5 +146,6 @@ def get_data(patient_list, win_range):
 
     return total_df
 
-# total_df = get_data(['P110'], [240])
-#print(total_df)
+
+total_df = get_data(['P110'], [240])
+print(total_df)
