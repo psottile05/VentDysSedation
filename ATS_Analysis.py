@@ -125,7 +125,7 @@ def rolling_rass_combi(breath_df, rn_df):
 def get_data(patient_list, win_range):
     total_df = pd.DataFrame()
 
-    patient_df = pd.read_csv('C:\Research_data\RawData\Demographic Data v2.csv', engine = 'c',
+    patient_df = pd.read_csv('C:\Research_data\Demographic Data v2.csv', engine = 'c',
                              usecols = ['Study ID', 'NMB', 'Start_End_NMB'])
     patient_df.set_index(['Study ID'], inplace = True)
 

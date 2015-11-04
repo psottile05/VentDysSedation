@@ -52,7 +52,6 @@ def get_waveform_and_breath(file, semaphore):
     breath_df = DBCreate.get_breath_data(file)
     wave_df = DBCreate.get_waveform_data(file)
 
-
     breath_col.insert_many(
         json.loads(
             wave_df.groupby('breath', sort = False).apply(DBCreate.waveform_data_entry, breath_df = breath_df).to_json(
@@ -65,6 +64,10 @@ for file in files:
     print(file)
     get_waveform_and_breath(file, Semaphore(100))
 
+files = list(input_log.find({'type': 'rn', 'loaded': 0}))
+
+for fie in files:
+    import_RN_RT_data(file)
 #wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 #gevent.joinall(wave_and_breath_greenlets)
 
