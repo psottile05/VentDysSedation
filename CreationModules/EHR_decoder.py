@@ -4,7 +4,10 @@ import numpy as np
 import itertools
 import os
 
-path = u'c:\\Research_data\\RawData\\Epic_Data\\'
+client = MongoClient()
+db = client.VentDB
+lab_db = db.Lab_collection
+RN_db = db.RN_collection
 
 
 def data_analysis(fileName):
@@ -278,16 +281,11 @@ def load_EHR_data(path):
                     if os.path.exists(path + '\\' + patients + '\\edited' + files) == False:
                         try:
                             df = data_analysis(path + '\\' + patients + '\\' + files)
-                            print(patients, files)
-                            print('\n')
-                            df.to_csv(path + '\\' + patients + '\\edited' + files)
                         except Exception as e:
                             print('did not save', patients, files, e, '\n\n\n')
                 if ('Lab' in files) and 'edit' not in files:
                     try:
                         df = lab_analysis(path, patients, '\\' + patients + '\\' + files)
-                        newFile = open(path + '\\' + patients + '\\edit' + files, "w")
-                        newFile.write(df)
-                        newFile.close()
+
                     except Exception as e:
                         print(patients, files, e)
