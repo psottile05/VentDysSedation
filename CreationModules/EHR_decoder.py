@@ -167,8 +167,8 @@ def data_analysis(path, patients, fileName):
             lists = list(itertools.chain(*found_items[items]['values']))
             found_items[items]['values'] = lists
 
-    for items in found_items:
-        print(items, len(found_items[items]['values']), found_items[items]['rows'] * 5)
+            # for items in found_items:
+            # print(items, len(found_items[items]['values']), found_items[items]['rows'] * 5)
         # print (found_items[items]['values'])
 
     dicts = []
@@ -197,7 +197,20 @@ def data_analysis(path, patients, fileName):
         df = df.join(temp, how = 'left')
 
     df.dropna(inplace = True, how = 'all')
-    print(df.count())
+
+    try:
+        df['SBP'] = df['BP'].str.split('/', n = 1).str.get(0)
+        df['DBP'] = df['BP'].str.split('/', n = 1).str.get(1)
+        df.drop(['BP'], axis = 1, inplace = True)
+    except:
+        pass
+
+    try:
+        df['A_SBP'] = df['A-line'].str.split('/', n = 1).str.get(0)
+        df['A_DBP'] = df['A-line'].str.split('/', n = 1).str.get(1)
+        df.drop(['A-line'], axis = 1, inplace = True)
+    except:
+        pass
 
     return df
 
