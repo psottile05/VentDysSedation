@@ -239,7 +239,7 @@ def lab_analysis(path, fileName):
                 labGroup = 'CBC'
             elif labName is set('LACTATE WHOLE BLOOD VENOUS', 'LACTATE WHOLE BLOOD ARTERIAL'):
                 labGroup = 'Lactate'
-            elif labName is set('Prothrombin Time', 'INTERNATIONAL NORMALIZED RATIO')
+            elif labName is set('Prothrombin Time', 'INTERNATIONAL NORMALIZED RATIO'):
                 labGroup = 'Coags'
             elif labName is set('pH ARTERIAL', 'Pco2 Arterial', 'PO2 Arterial', 'BICARBONATE ARTERIAL',
                                 'MEASURED O2SAT ARTERIAL', 'FiO2 ARTERIAL'):
