@@ -198,13 +198,16 @@ def data_analysis(fileName):
     return df
 
 
-def lab_analysis(path, fileName):
+def lab_analysis(path, patients, fileName):
     class labTypes:
         def __init__(self, dateTime, labName, labValue, labGroup):
             self.dateTime = dateTime
             self.labName = labName
             self.labValue = labValue
             self.labGroup = labGroup
+
+        def make_tuple(self):
+            return (self.dateTime, self.labGroup, self.labName, self.labValue)
 
     file = open(path + '\\' + fileName)
     fileLines = file.readlines()
@@ -223,14 +226,13 @@ def lab_analysis(path, fileName):
             lineInfo = lines.split(": ")
 
             labName = lineInfo[0].strip()
-            print(labName)
 
             if labName in ['Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin Total', 'ALBUMIN',
-                              'Alk Phos, Serum/Plasma', 'Protein Total, Serum/Plasma', 'Bilirubin, Direct',
+                           'Alk Phos, Serum/Plasma', 'Protein Total, Serum/Plasma', 'Bilirubin, Direct',
                            'Bilirubin, Indirect']:
                 labGroup = 'LFT'
             elif labName in ['Sodium, Serum/Plasma', 'Potassium, Serum/Plasma', 'Chloride, Serum/Plasma',
-                                'Carbon Dioxide', 'GLUCOSE, RANDOM, SERUM/PLASMA', 'Blood Urea Nitrogen',
+                             'Carbon Dioxide', 'GLUCOSE, RANDOM, SERUM/PLASMA', 'Blood Urea Nitrogen',
                              'CREATININE, SERUM/PLASMA', 'Calcium, Serum/Plasma', 'ANION GAP',
                              'MAGNESIUM SERUM', 'PHOSPHORUS, SERUM/PLASMA']:
                 labGroup = 'Chemistry'
@@ -254,35 +256,12 @@ def lab_analysis(path, fileName):
 
             labCollection.append(labTypes(dateTime, labName, labValue, labGroup))
 
-            if labName not in labNames:
-                labNames.append(labName)
+    df = pd.DataFrame.from_records([items.make_tuple() for items in labCollection], columns = ['date_time', 'group',
+                                                                                               'lab', 'value'])
+    df['date_time'] = pd.to_datetime(df['date_time'], infer_datetime_format = True, errors = 'coerce')
+    df['patientID'] = patients.strip('P')
 
-            if dateTime not in dates:
-                dates.append(dateTime)
-
-    dates.sort()
-    labNames.sort()
-
-    for labs in labNames:
-        title = title + labs + ","
-
-    for number in dates:
-        title = title + "\n" + number + ","
-
-        for items in labNames:
-            addedItem = 0
-
-            for things in labCollection:
-                if number == things.dateTime and items == things.labName:
-                    addedItem = 1
-                    title = title + things.labValue + ","
-
-            if addedItem == 0:
-                title = title + "--,"
-
-    df = pd.DataFrame(title)
-    print(df.head())
-    return (df)
+    return df
 
 
 def load_EHR_data(path):
@@ -306,7 +285,7 @@ def load_EHR_data(path):
                             print('did not save', patients, files, e, '\n\n\n')
                 if ('Lab' in files) and 'edit' not in files:
                     try:
-                        df = lab_analysis(path, '\\' + patients + '\\' + files)
+                        df = lab_analysis(path, patients, '\\' + patients + '\\' + files)
                         newFile = open(path + '\\' + patients + '\\edit' + files, "w")
                         newFile.write(df)
                         newFile.close()
