@@ -222,37 +222,35 @@ def lab_analysis(path, fileName):
         if re.search(r'\w: \d', lines):
             lineInfo = lines.split(": ")
 
-            labName = lineInfo[0]
+            labName = lineInfo[0].strip()
+            print(labName)
 
-            if labName is set(['Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin Total', 'ALBUMIN',
+            if labName in ['Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin Total', 'ALBUMIN',
                               'Alk Phos, Serum/Plasma', 'Protein Total, Serum/Plasma', 'Bilirubin, Direct',
-                               'Bilirubin, Indirect']):
+                           'Bilirubin, Indirect']:
                 labGroup = 'LFT'
-            elif labName is set(['Sodium,Serum/Plasma', 'Potassium, Serum/Plasma', 'Chloride, Serum/Plasma',
+            elif labName in ['Sodium, Serum/Plasma', 'Potassium, Serum/Plasma', 'Chloride, Serum/Plasma',
                                 'Carbon Dioxide', 'GLUCOSE, RANDOM, SERUM/PLASMA', 'Blood Urea Nitrogen',
-                                 'CREATININE, SERUM/PLASMA', 'Calcium, Serum/Plasma', 'ANION GAP']):
+                             'CREATININE, SERUM/PLASMA', 'Calcium, Serum/Plasma', 'ANION GAP',
+                             'MAGNESIUM SERUM', 'PHOSPHORUS, SERUM/PLASMA']:
                 labGroup = 'Chemistry'
-            elif labName is set(['WHITE BLOOD CELL COUNT', 'HEMOGLOBIN', 'PLATELET COUNT']):
+            elif labName in ['WHITE BLOOD CELL COUNT', 'HEMOGLOBIN', 'PLATELET COUNT']:
                 labGroup = 'CBC'
-            elif labName is set(['LACTATE WHOLE BLOOD VENOUS', 'LACTATE WHOLE BLOOD ARTERIAL']):
+            elif labName in ['LACTATE WHOLE BLOOD VENOUS', 'LACTATE WHOLE BLOOD ARTERIAL']:
                 labGroup = 'Lactate'
-            elif labName is set(['Prothrombin Time', 'INTERNATIONAL NORMALIZED RATIO']):
+            elif labName in ['Prothrombin Time', 'INTERNATIONAL NORMALIZED RATIO']:
                 labGroup = 'Coags'
-            elif labName is set(['pH ARTERIAL', 'Pco2 Arterial', 'PO2 Arterial', 'BICARBONATE ARTERIAL',
-                                 'MEASURED O2SAT ARTERIAL', 'FiO2 ARTERIAL']):
+            elif labName in ['pH ARTERIAL', 'Pco2 Arterial', 'PO2 Arterial', 'BICARBONATE ARTERIAL',
+                             'MEASURED O2SAT ARTERIAL', 'FiO2 ARTERIAL']:
                 labGroup = 'ABG'
+            elif labName in ['pH Venous', 'Pco2 Venous', 'PO2 Venous', 'Bicarbonate Venous', 'O2SAT Venous Measured']:
+                labGroup = 'VBG'
             else:
                 labGroup = 'Other'
 
             labName = ''.join(labName.split(',')).lower()
 
             labValue = lineInfo[1].split(" (")[0].strip()
-
-
-            print(dateTime)
-            print(labName)
-            print(labValue)
-            print(labGroup)
 
             labCollection.append(labTypes(dateTime, labName, labValue, labGroup))
 
@@ -261,8 +259,6 @@ def lab_analysis(path, fileName):
 
             if dateTime not in dates:
                 dates.append(dateTime)
-
-                # clean up lab names; i stat, point of care, serum/plasma vs urine
 
     dates.sort()
     labNames.sort()
@@ -284,7 +280,9 @@ def lab_analysis(path, fileName):
             if addedItem == 0:
                 title = title + "--,"
 
-    return (title)
+    df = pd.DataFrame(title)
+    print(df.head())
+    return (df)
 
 
 def load_EHR_data(path):
