@@ -200,7 +200,7 @@ def data_analysis(fileName):
 
 def lab_analysis(path, fileName):
     class labTypes:
-        def __init__(self, dateTime, labName, labValue):
+        def __init__(self, dateTime, labName, labValue, labGroup):
             self.dateTime = dateTime
             self.labName = labName
             self.labValue = labValue
@@ -221,15 +221,38 @@ def lab_analysis(path, fileName):
 
         if re.search(r'\w: \d', lines):
             lineInfo = lines.split(": ")
+
             labName = lineInfo[0]
-
-            labValue = lineInfo[1].split(" (")[0]
-
             labName = ''.join(labName.split(","))
-            # labValue = labValue.strip()
 
-            labGroup = 'test'
-            print(dateTime, labName, labValue, labGroup)
+            labValue = lineInfo[1].split(" (")[0].strip()
+
+            if labName is set('Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin Total', 'ALBUMIN',
+                              'Alk Phos, Serum/Plasma', 'Protein Total, Serum/Plasma', 'Bilirubin, Direct',
+                              'Bilirubin, Indirect'):
+                labGroup = 'LFT'
+            elif labName is set('Sodium,Serum/Plasma', 'Potassium, Serum/Plasma', 'Chloride, Serum/Plasma',
+                                'Carbon Dioxide', 'GLUCOSE, RANDOM, SERUM/PLASMA', 'Blood Urea Nitrogen',
+                                'CREATININE, SERUM/PLASMA', 'Calcium, Serum/Plasma', 'ANION GAP'):
+                labGroup = 'Chemistry'
+            elif labName is set('WHITE BLOOD CELL COUNT', 'HEMOGLOBIN', 'PLATELET COUNT'):
+                labGroup = 'CBC'
+            elif labName is set('LACTATE WHOLE BLOOD VENOUS', 'LACTATE WHOLE BLOOD ARTERIAL'):
+                labGroup = 'Lactate'
+            elif labName is set('Prothrombin Time', 'INTERNATIONAL NORMALIZED RATIO')
+                labGroup = 'Coags'
+            elif labName is set('pH ARTERIAL', 'Pco2 Arterial', 'PO2 Arterial', 'BICARBONATE ARTERIAL',
+                                'MEASURED O2SAT ARTERIAL', 'FiO2 ARTERIAL'):
+                labGroup = 'ABG'
+            else:
+                labGroup = 'Other'
+
+            labName = labName.lower()
+
+            print(dateTime)
+            print(labName)
+            print(labValue)
+            print(labGroup)
 
             labCollection.append(labTypes(dateTime, labName, labValue, labGroup))
 
