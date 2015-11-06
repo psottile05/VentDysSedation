@@ -2,6 +2,7 @@ import re
 import pandas as pd
 import numpy as np
 import itertools
+from pymongo import MongoClient
 import os
 
 client = MongoClient()
@@ -10,7 +11,7 @@ lab_db = db.Lab_collection
 RN_db = db.RN_collection
 
 
-def data_analysis(fileName):
+def data_analysis(path, patients, fileName):
     raw_data = []
 
     data = open(fileName, 'r+')
@@ -278,11 +279,11 @@ def load_EHR_data(path):
             all_files.append([path, patients, files])
             if '.txt' in files and os.path.getsize(path + '\\' + patients + '\\' + files) > 0:
                 if ('RN' in files or 'RT' in files) and 'edit' not in files:
-                    if os.path.exists(path + '\\' + patients + '\\edited' + files) == False:
-                        try:
-                            df = data_analysis(path + '\\' + patients + '\\' + files)
-                        except Exception as e:
-                            print('did not save', patients, files, e, '\n\n\n')
+                    try:
+                        df = data_analysis(path, patients, path + '\\' + patients + '\\' + files)
+                        print(df.head())
+                    except Exception as e:
+                        print('did not save', patients, files, e, '\n\n\n')
                 if ('Lab' in files) and 'edit' not in files:
                     try:
                         df = lab_analysis(path, patients, '\\' + patients + '\\' + files)
