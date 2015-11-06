@@ -227,7 +227,10 @@ def lab_analysis(path, fileName):
 
             labName = ''.join(labName.split(","))
             # labValue = labValue.strip()
+
             labGroup = 'test'
+            print(dateTime, labName, labValue, labGroup)
+
             labCollection.append(labTypes(dateTime, labName, labValue, labGroup))
 
             if labName not in labNames:
