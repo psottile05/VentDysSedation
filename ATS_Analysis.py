@@ -82,7 +82,6 @@ def data_collect(patient, patient_info):
 
 
 def collection_freq(breath_df, win):
-
     for ds_type in ['ds', 'pl', 'ie']:
         breath_df['{0}_rolling'.format(ds_type)] = pd.rolling_sum(breath_df['analysis.' + ds_type], window = 60 * win,
                                                                   center = True, min_periods = 1)

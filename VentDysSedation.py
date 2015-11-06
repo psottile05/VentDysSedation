@@ -3,17 +3,16 @@ __author__ = 'sottilep'
 # from gevent import monkey
 # monkey.patch_all()
 
-from pymongo import MongoClient
-from CreationModules import FileSearch as FS
-from CreationModules import DatabaseCreation as DBCreate
-
+import datetime
 import json
 import pandas as pd
-import numpy as np
 import pymongo
-import datetime
-import gevent
-from gevent.lock import Semaphore
+from CreationModules import DatabaseCreation as DBCreate
+from CreationModules import FileSearch as FS
+from pymongo import MongoClient
+
+# from gevent.lock import Semaphore
+
 
 pd.set_option('max_columns', 40)
 client = MongoClient()
@@ -38,7 +37,6 @@ breath_col.create_index([('date_time', pymongo.ASCENDING)])
 breath_col.create_index([('loc', pymongo.GEO2D)], min = -1,
                         max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
-
 # Update List of RawDataFiles and Match Breath/Waveform Files
 FS.file_search()
 FS.file_match()
@@ -47,28 +45,27 @@ FS.file_match()
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}))
 
 
-def get_waveform_and_breath(file, semaphore):
-    # with semaphore:
+def get_waveform_and_breath(file):
     breath_df = DBCreate.get_breath_data(file)
     wave_df = DBCreate.get_waveform_data(file)
 
     breath_col.insert_many(
         json.loads(
             wave_df.groupby('breath', sort = False).apply(DBCreate.waveform_data_entry, breath_df = breath_df).to_json(
-            orient = 'records')), ordered = False)
+                orient = 'records')), ordered = False)
     input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
 
 for file in files:
     print(file)
-    get_waveform_and_breath(file, Semaphore(100))
+    get_waveform_and_breath(file)
 
 files = list(input_log.find({'type': 'rn', 'loaded': 0}))
 
 for fie in files:
     import_RN_RT_data(file)
-#wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
-#gevent.joinall(wave_and_breath_greenlets)
+# wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
+# gevent.joinall(wave_and_breath_greenlets)
 
 print(breath_col.find_one())
