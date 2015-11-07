@@ -11,7 +11,7 @@ lab_db = db.Lab_collection
 RN_db = db.RN_collection
 
 
-def data_analysis(path, patients, fileName):
+def data_analysis(patients, fileName):
     raw_data = []
 
     data = open(fileName, 'r+')
@@ -215,7 +215,7 @@ def data_analysis(path, patients, fileName):
     return df
 
 
-def lab_analysis(path, patients, fileName):
+def lab_analysis(patients, fileName):
     class labTypes:
         def __init__(self, dateTime, labName, labValue, labGroup):
             self.dateTime = dateTime
@@ -281,36 +281,29 @@ def lab_analysis(path, patients, fileName):
     return df
 
 
-def load_EHR_data(path):
-    directory = os.listdir(path)
-    all_files = []
+def load_EHR_data(path, patients):
+    if '.txt' in path and os.path.getsize(path) > 0:
+        error = {}
+        if ('RN' in path) and 'edit' not in path:
+            try:
+                rn_df = data_analysis(patients, path)
+                rt_df = data_analysis(patients, path + '\\' + patients + '\\' + 'RT Data.txt')
+                tot_df = rn_df.combine_first(rt_df)
+            except Exception as e:
+                error = {patients, path, e}
 
-    for patients in directory:
-        file_list = os.listdir(path + '\\' + patients)
+            tot_df.reset_index(inplace = True)
+            tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
+            tot_df['patientID'] = patients.strip('P')
+            RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
 
-        for files in file_list:
-            if '.txt' in files and os.path.getsize(path + '\\' + patients + '\\' + files) > 0:
-                error = {}
-                if ('RN' in files) and 'edit' not in files:
-                    try:
-                        rn_df = data_analysis(path, patients, path + '\\' + patients + '\\' + files)
-                        rt_df = data_analysis(path, patients, path + '\\' + patients + '\\' + 'RT Data.txt')
-                        tot_df = rn_df.combine_first(rt_df)
-                    except Exception as e:
-                        error = {patients, files, e}
+        if ('Lab' in path) and 'edit' not in path
+            try:
+                df = lab_analysis(patients, path)
+            except Exception as e:
+                error = {patients, path, e}
 
-                    tot_df.reset_index(inplace = True)
-                    tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
-                    tot_df['patientID'] = patients.strip('P')
-                    RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
-
-                if ('Lab' in files) and 'edit' not in files:
-                    try:
-                        df = lab_analysis(path, patients, '\\' + patients + '\\' + files)
-                    except Exception as e:
-                        error = {patients, files, e}
-
-                    df.reset_index(inplace = True)
-                    df.rename(columns = {'index': 'date_time'}, inplace = True)
-                    df['patientID'] = patients.strip('P')
-                    lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)
+            df.reset_index(inplace = True)
+            df.rename(columns = {'index': 'date_time'}, inplace = True)
+            df['patientID'] = patients.strip('P')
+            lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)
