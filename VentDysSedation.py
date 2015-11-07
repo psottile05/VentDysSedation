@@ -21,8 +21,8 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-# input_log.drop()
-# breath_col.drop()
+input_log.drop()
+breath_col.drop()
 
 input_log.create_index([('type', pymongo.TEXT)])
 input_log.create_index([('loaded', pymongo.ASCENDING)])
@@ -42,8 +42,7 @@ FS.file_search()
 FS.file_match()
 
 # Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}))
-
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
 
 def get_waveform_and_breath(file):
     breath_df = DBCreate.get_breath_data(file)
@@ -63,8 +62,8 @@ for file in files:
 
 files = list(input_log.find({'type': 'rn', 'loaded': 0}))
 
-for fie in files:
-    import_RN_RT_data(file)
+# for fie in files:
+#    import_RN_RT_data(file)
 # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 # gevent.joinall(wave_and_breath_greenlets)
 

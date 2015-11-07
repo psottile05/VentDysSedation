@@ -86,7 +86,7 @@ def data_analysis(path, patients, fileName):
         if items == 'Vitals':
             count = count + 1
 
-    print(count)
+    # print(count)
 
     for items in raw_data:
         results = re.match(search_items['DateTime']['pat'], items)
@@ -177,10 +177,10 @@ def data_analysis(path, patients, fileName):
             dicts.append({items: values[1], 'DateTime': values[0]})
 
     df = pd.DataFrame.from_dict(found_items['DateTime']['values'])
-    df.rename(columns = {0: 'DateTime'}, inplace = True)
-    df['DateTime'] = pd.to_datetime(df['DateTime'])
-    df.drop_duplicates(subset = 'DateTime', inplace = True, keep = 'first')
-    df.set_index('DateTime', inplace = True, drop = True, verify_integrity = True)
+    df.rename(columns = {0: 'date_time'}, inplace = True)
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    df.drop_duplicates(subset = 'date_time', inplace = True, keep = 'first')
+    df.set_index('date_time', inplace = True, drop = True, verify_integrity = True)
 
     temp_df = pd.DataFrame(dicts)
     temp_df.replace(to_replace = '', value = np.nan, inplace = True)
@@ -291,15 +291,27 @@ def load_EHR_data(path):
         for files in file_list:
             all_files.append([path, patients, files])
             if '.txt' in files and os.path.getsize(path + '\\' + patients + '\\' + files) > 0:
-                if ('RN' in files or 'RT' in files) and 'edit' not in files:
+                error = {}
+                if ('RN' in files) and 'edit' not in files:
                     try:
-                        df = data_analysis(path, patients, path + '\\' + patients + '\\' + files)
-                        print(df.head())
+                        rn_df = data_analysis(path, patients, path + '\\' + patients + '\\' + files)
+                        rt_df = data_analysis(path, patients, path + '\\' + patients + '\\' + 'RT Data.txt')
+                        tot_df = rn_df.combine_first(rt_df)
                     except Exception as e:
-                        print('did not save', patients, files, e, '\n\n\n')
+                        error = {patients, files, e}
+
+                    tot_df.reset_index(inplace = True)
+                    tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
+                    tot_df['patientID'] = patients.strip('P')
+                    RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
+
                 if ('Lab' in files) and 'edit' not in files:
                     try:
                         df = lab_analysis(path, patients, '\\' + patients + '\\' + files)
-
                     except Exception as e:
-                        print(patients, files, e)
+                        error = {patients, files, e}
+
+                    df.reset_index(inplace = True)
+                    df.rename(columns = {'index': 'date_time'}, inplace = True)
+                    df['patientID'] = patients.strip('P')
+                    lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)
