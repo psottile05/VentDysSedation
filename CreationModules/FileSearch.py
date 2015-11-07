@@ -35,11 +35,11 @@ def file_search():
                 file_type = "breath"
             if 'Waveform' in file.name or 'waveform' in file.name:
                 file_type = "waveform"
-            if 'RT' in file.name or 'rt' in file.name:
+            if ('RT' in file.name or 'rt' in file.name) and ('edit' not in file.name):
                 file_type = "rt"
-            if 'RN' in file.name or 'rn' in file.name:
+            if ('RN' in file.name or 'rn' in file.name) and ('edit' not in file.name):
                 file_type = "rt"
-            if 'Lab' in file.name or 'lab' in file.name:
+            if ('Lab' in file.name or 'lab' in file.name) and ('edit' not in file.name):
                 file_type = "lab"
 
             start_time = re.search(r'(\d\d-\d\d-\d\d-\d\d-\d\d)|(\d\d\d-\d)', file.name)
@@ -49,7 +49,7 @@ def file_search():
 
             else:
                 try:
-                    start_time = datetime.datetime.strptime(start_time.group(), '%y-%m-%d-%H-%M').timestamp()
+                    start_time = datetime.datetime.strptime(start_time.group(), '%y-%m-%d-%H-%M')
                 except ValueError:
                     start_time = re.sub('-', '.', start_time.group())
 

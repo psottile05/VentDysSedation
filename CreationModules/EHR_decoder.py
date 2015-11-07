@@ -289,7 +289,6 @@ def load_EHR_data(path):
         file_list = os.listdir(path + '\\' + patients)
 
         for files in file_list:
-            all_files.append([path, patients, files])
             if '.txt' in files and os.path.getsize(path + '\\' + patients + '\\' + files) > 0:
                 error = {}
                 if ('RN' in files) and 'edit' not in files:
