@@ -1,11 +1,11 @@
 __author__ = 'sottilep'
 
-from pymongo import MongoClient
+import re
+
 import numpy as np
 import pandas as pd
-import re
-import numba
 import scipy.signal as sig
+from pymongo import MongoClient
 
 client = MongoClient()
 db = client.VentDB

@@ -5,13 +5,15 @@ __author__ = 'sottilep'
 
 import datetime
 import json
-import pandas as pd
-import pymongo
 import re
 from pathlib import Path
+
+import pandas as pd
+import pymongo
+from pymongo import MongoClient
+
 from CreationModules import DatabaseCreation as DBCreate
 from CreationModules import FileSearch as FS
-from pymongo import MongoClient
 
 # from gevent.lock import Semaphore
 
