@@ -1,9 +1,10 @@
-import re
-import pandas as pd
-import numpy as np
 import itertools
-from pymongo import MongoClient
+import re
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from pymongo import MongoClient
 
 client = MongoClient()
 db = client.VentDB
@@ -84,7 +85,7 @@ def data_analysis(fileName):
     count = 0
     for items in raw_data:
         if items == 'Vitals':
-            count = count + 1
+            count += 1
 
     # print(count)
 
@@ -94,7 +95,7 @@ def data_analysis(fileName):
         if results:
             text = results.group(0)
             text = date_cleaner(text)
-            found_items['DateTime']['rows'] = found_items['DateTime']['rows'] + 1
+            found_items['DateTime']['rows'] += 1
             found_items['DateTime']['values'].append(text)
 
     for items in search_items:
@@ -111,7 +112,7 @@ def data_analysis(fileName):
                     dates = []
 
                     # update number of hits for that heading
-                    found_items[items]['rows'] = found_items[items]['rows'] + 1
+                    found_items[items]['rows'] += 1
 
                     # match desired data and blanks to keep spacing in temp list
                     for k in range(i, i + 19):
@@ -154,7 +155,7 @@ def data_analysis(fileName):
                                     dates.append(date_cleaner(more_dates.group(0)))
                             no_date = False
 
-                        k = k - 1
+                        k -= 1
 
                     # print('\t', dates[::-1], '\n', temp)
 
@@ -169,7 +170,7 @@ def data_analysis(fileName):
 
             # for items in found_items:
             # print(items, len(found_items[items]['values']), found_items[items]['rows'] * 5)
-        # print (found_items[items]['values'])
+            # print (found_items[items]['values'])
 
     dicts = []
     for items in final_data['DateTime']:
@@ -224,16 +225,13 @@ def lab_analysis(fileName):
             self.labGroup = labGroup
 
         def make_tuple(self):
-            return (self.dateTime, self.labGroup, self.labName, self.labValue)
+            return self.dateTime, self.labGroup, self.labName, self.labValue
 
     file = open(fileName)
     fileLines = file.readlines()
     file.close()
 
     labCollection = []
-    labNames = []
-    dates = []
-    title = "date_time,"
 
     for lines in fileLines:
         if re.match(r'\d\d?/\d\d?/\d\d\d\d \d\d:\d\d', lines):
@@ -276,33 +274,36 @@ def lab_analysis(fileName):
     df = pd.DataFrame.from_records([items.make_tuple() for items in labCollection], columns = ['date_time', 'group',
                                                                                                'lab', 'value'])
     df['date_time'] = pd.to_datetime(df['date_time'], infer_datetime_format = True, errors = 'coerce')
-    df['patientID'] = patients.strip('P')
 
     return df
 
 
 def load_EHR_data(path, patients):
-
     if ('RN' in path) and 'edit' not in path:
-            try:
-                rn_df = data_analysis(path)
-                rt_df = data_analysis(Path(path).parent.joinpath('RT Data.txt').as_posix())
-                tot_df = rn_df.combine_first(rt_df)
-            except Exception as e:
-                error = {path, e}
+        try:
+            rn_df = data_analysis(path)
+            rt_df = data_analysis(Path(path).parent.joinpath('RT Data.txt').as_posix())
+            tot_df = rn_df.combine_first(rt_df)
+        except Exception as e:
+            error = {path, e}
+            print(error)
 
-            tot_df.reset_index(inplace = True)
-            tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
-            tot_df['patientID'] = patients
-            RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
+        tot_df.reset_index(inplace = True)
+        tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
+        tot_df['patientID'] = patients
+        RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
 
-        if ('Lab' in path) and 'edit' not in path
-            try:
-                df = lab_analysis(path)
-            except Exception as e:
-                error = {path, e}
+    elif ('Lab' in path) and 'edit' not in path:
+        try:
+            df = lab_analysis(path)
+        except Exception as e:
+            error = {path, e}
+            print(error)
 
-            df.reset_index(inplace = True)
-            df.rename(columns = {'index': 'date_time'}, inplace = True)
-            df['patientID'] = patients
-            lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)
+        df.reset_index(inplace = True)
+        df.rename(columns = {'index': 'date_time'}, inplace = True)
+        df['patientID'] = patients
+        lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)
+
+    else:
+        print('unknown file type')
