@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import itertools
 from pymongo import MongoClient
-import os
+from pathlib import Path
 
 client = MongoClient()
 db = client.VentDB
@@ -11,7 +11,7 @@ lab_db = db.Lab_collection
 RN_db = db.RN_collection
 
 
-def data_analysis(patients, fileName):
+def data_analysis(fileName):
     raw_data = []
 
     data = open(fileName, 'r+')
@@ -215,7 +215,7 @@ def data_analysis(patients, fileName):
     return df
 
 
-def lab_analysis(patients, fileName):
+def lab_analysis(fileName):
     class labTypes:
         def __init__(self, dateTime, labName, labValue, labGroup):
             self.dateTime = dateTime
@@ -226,7 +226,7 @@ def lab_analysis(patients, fileName):
         def make_tuple(self):
             return (self.dateTime, self.labGroup, self.labName, self.labValue)
 
-    file = open(path + '\\' + fileName)
+    file = open(fileName)
     fileLines = file.readlines()
     file.close()
 
@@ -282,26 +282,27 @@ def lab_analysis(patients, fileName):
 
 
 def load_EHR_data(path, patients):
+
     if ('RN' in path) and 'edit' not in path:
             try:
-                rn_df = data_analysis(patients, path)
-                rt_df = data_analysis(patients, path + '\\' + patients + '\\' + 'RT Data.txt')
+                rn_df = data_analysis(path)
+                rt_df = data_analysis(Path(path).parent.joinpath('RT Data.txt').as_posix())
                 tot_df = rn_df.combine_first(rt_df)
             except Exception as e:
-                error = {patients, path, e}
+                error = {path, e}
 
             tot_df.reset_index(inplace = True)
             tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
-            tot_df['patientID'] = patients.strip('P')
+            tot_df['patientID'] = patients
             RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
 
         if ('Lab' in path) and 'edit' not in path
             try:
-                df = lab_analysis(patients, path)
+                df = lab_analysis(path)
             except Exception as e:
-                error = {patients, path, e}
+                error = {path, e}
 
             df.reset_index(inplace = True)
             df.rename(columns = {'index': 'date_time'}, inplace = True)
-            df['patientID'] = patients.strip('P')
+            df['patientID'] = patients
             lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)

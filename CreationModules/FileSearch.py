@@ -2,7 +2,6 @@ __author__ = 'sottilep'
 
 from pathlib import Path
 from pymongo import MongoClient, errors
-import pymongo
 import re
 import datetime
 

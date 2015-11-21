@@ -8,6 +8,7 @@ import json
 import pandas as pd
 import pymongo
 import re
+from pathlib import Path
 from CreationModules import DatabaseCreation as DBCreate
 from CreationModules import FileSearch as FS
 from pymongo import MongoClient
@@ -55,10 +56,10 @@ def get_waveform_and_breath(file):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(3))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
 
 for file in files:
-    print(file)
+    # print(file)
     get_waveform_and_breath(file)
 
 # Query DB for list of EHR files not yet added
@@ -67,7 +68,7 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
                                       {'loaded': 0}]}).limit(3))
 
 for file in files:
-    print(file)
+    print(Path(file['_id']).parent, file)
 
 # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 # gevent.joinall(wave_and_breath_greenlets)
