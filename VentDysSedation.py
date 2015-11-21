@@ -7,6 +7,7 @@ import datetime
 import json
 import pandas as pd
 import pymongo
+import re
 from CreationModules import DatabaseCreation as DBCreate
 from CreationModules import FileSearch as FS
 from pymongo import MongoClient
@@ -41,9 +42,6 @@ breath_col.create_index([('loc', pymongo.GEO2D)], min = -1,
 FS.file_search()
 FS.file_match()
 
-# Query DB for list of files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(5))
-
 def get_waveform_and_breath(file):
     breath_df = DBCreate.get_breath_data(file)
     wave_df = DBCreate.get_waveform_data(file)
@@ -56,15 +54,22 @@ def get_waveform_and_breath(file):
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
 
+# Query DB for list of Waveform/breath files not yet added
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(3))
+
 for file in files:
     print(file)
     get_waveform_and_breath(file)
 
-files = list(input_log.find({'type': 'rn', 'loaded': 0}))
+# Query DB for list of EHR files not yet added
+files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
+                                      {'type': {'$not': re.compile(r'breath')}},
+                                      {'loaded': 0}]}).limit(3))
 
-# for fie in files:
-#    import_RN_RT_data(file)
+for file in files:
+    print(file)
+
 # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 # gevent.joinall(wave_and_breath_greenlets)
 
-print(breath_col.find_one())
+# print(breath_col.find_one())

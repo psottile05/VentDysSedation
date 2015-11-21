@@ -282,9 +282,7 @@ def lab_analysis(patients, fileName):
 
 
 def load_EHR_data(path, patients):
-    if '.txt' in path and os.path.getsize(path) > 0:
-        error = {}
-        if ('RN' in path) and 'edit' not in path:
+    if ('RN' in path) and 'edit' not in path:
             try:
                 rn_df = data_analysis(patients, path)
                 rt_df = data_analysis(patients, path + '\\' + patients + '\\' + 'RT Data.txt')
