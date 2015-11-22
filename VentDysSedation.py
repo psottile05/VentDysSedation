@@ -9,8 +9,6 @@ from ipyparallel import Client
 
 import pymongo
 from pymongo import MongoClient
-
-from CreationModules import DatabaseCreation as DBCreate
 from CreationModules import FileSearch as FS
 
 ipclient = Client()
