@@ -59,6 +59,6 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
 
 for file in files:
     pass
-    #print(file)
 
-print(breath_col.find_one())
+for items in input_log.find({'loaded': 1}):
+    print(items)
