@@ -10,7 +10,7 @@ client = MongoClient()
 db = client.VentDB
 lab_db = db.Lab_collection
 RN_db = db.RN_collection
-
+input_log = db.input_log
 
 def data_analysis(fileName):
     raw_data = []
@@ -291,7 +291,8 @@ def load_EHR_data(path, patients):
         tot_df.reset_index(inplace = True)
         tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
         tot_df['patientID'] = patients
-        RN_db.insert_many(tot_df.to_json(orient = 'records'), ordered = False)
+        RN_db.insert_many(tot_df.to_dict(orient = 'records'), ordered = False)
+        input_log.update_one({'_id': Path(path).parent.joinpath('RT Data.txt').as_posix()}, {'$set': {'loaded': 1}})
 
     elif ('Lab' in path) and 'edit' not in path:
         try:
@@ -300,10 +301,11 @@ def load_EHR_data(path, patients):
             error = {path, e}
             print(error)
 
-        df.reset_index(inplace = True)
-        df.rename(columns = {'index': 'date_time'}, inplace = True)
         df['patientID'] = patients
-        lab_db.insert_many(df.to_json(orient = 'records'), ordered = False)
-
+        lab_db.insert_many(df.to_dict(orient = 'records'), ordered = False)
+    elif ('RT' in path):
+        pass
     else:
-        print('unknown file type')
+        print(path, 'unknown file type')
+
+    input_log.update_one({'_id': path}, {'$set': {'loaded': 1}})

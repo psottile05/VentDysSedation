@@ -37,24 +37,30 @@ FS.file_search()
 FS.file_match()
 
 
-@ipview.parallel(block = True)
+@ipview.parallel()
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation as DBCreate
     for file in files:
         DBCreate.get_waveform_and_breath(file)
 
+
+# @ipview.parallel()
+def make_EHR_data(files):
+    from CreationModules import EHR_decoder as EHR
+    for file in files:
+        EHR.load_EHR_data(file['_id'], file['patient_id'])
+
 # Query DB for list of Waveform/breath files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(8))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(3))
 make_waveform_and_breath(files)
 
 # Query DB for list of EHR files not yet added
 files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
                                       {'type': {'$not': re.compile(r'breath')}},
                                       {'type': {'$not': re.compile(r'other')}},
-                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}))
+                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(3))
+make_EHR_data(files)
 
-for file in files:
-    pass
 
 for items in input_log.find({'loaded': 1}):
     print(items)

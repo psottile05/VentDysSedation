@@ -37,7 +37,7 @@ def file_search():
             elif ('RT' in file.name or 'rt' in file.name) and ('edit' not in file.name):
                 file_type = "rt"
             elif ('RN' in file.name or 'rn' in file.name) and ('edit' not in file.name):
-                file_type = "rt"
+                file_type = "rn"
             elif ('Lab' in file.name or 'lab' in file.name) and ('edit' not in file.name):
                 file_type = "lab"
             else:
