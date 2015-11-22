@@ -46,16 +46,18 @@ FS.file_match()
 
 
 @ipview.parallel(block = True)
-def get_waveform_and_breath(file):
-    breath_df = DBCreate.get_breath_data(file)
-    wave_df = DBCreate.get_waveform_data(file)
+def get_waveform_and_breath(files):
+    for file in files:
+        breath_df = DBCreate.get_breath_data(file)
+        wave_df = DBCreate.get_waveform_data(file)
 
-    breath_col.insert_many(
-        json.loads(
-            wave_df.groupby('breath', sort = False).apply(DBCreate.waveform_data_entry, breath_df = breath_df).to_json(
-                orient = 'records')), ordered = False)
-    input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
-    input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+        breath_col.insert_many(
+            json.loads(
+                wave_df.groupby('breath', sort = False).apply(DBCreate.waveform_data_entry,
+                                                              breath_df = breath_df).to_json(
+                    orient = 'records')), ordered = False)
+        input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+        input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
 
 
 # Query DB for list of Waveform/breath files not yet added
