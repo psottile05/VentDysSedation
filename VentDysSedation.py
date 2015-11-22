@@ -6,7 +6,7 @@ __author__ = 'sottilep'
 import datetime
 import json
 import re
-from ipyparallel import Client as pyClient
+from ipyparallel import Client
 
 import pandas as pd
 import pymongo
@@ -17,7 +17,7 @@ from CreationModules import FileSearch as FS
 
 pd.set_option('max_columns', 40)
 
-ipclient = pyClient()
+ipclient = Client()
 print(ipclient.ids)
 ipview = ipclient.load_balanced_view()
 
