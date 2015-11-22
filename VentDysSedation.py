@@ -64,7 +64,7 @@ def get_waveform_and_breath(file):
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(8))
 
 for file in files:
-    print(file['_id'])
+    # print(file['_id'])
     get_waveform_and_breath(file)
 
 # Query DB for list of EHR files not yet added
@@ -74,9 +74,10 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
                                       {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}))
 
 for file in files:
-    print(file)
+    pass
+    #print(file)
 
 # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 # gevent.joinall(wave_and_breath_greenlets)
 
-# print(breath_col.find_one())
+print(breath_col.find_one())
