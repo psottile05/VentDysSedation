@@ -1,12 +1,8 @@
 __author__ = 'sottilep'
 
-# from gevent import monkey
-# monkey.patch_all()
-
 import datetime
 import re
 from ipyparallel import Client
-
 import pymongo
 from pymongo import MongoClient
 from CreationModules import FileSearch as FS
@@ -41,7 +37,7 @@ FS.file_search()
 FS.file_match()
 
 
-@ipview.parallel()
+@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation as DBCreate
     for file in files:
