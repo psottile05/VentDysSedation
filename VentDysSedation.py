@@ -6,7 +6,7 @@ __author__ = 'sottilep'
 import datetime
 import json
 import re
-from pathlib import Path
+from ipyparallel import Client as pyClient
 
 import pandas as pd
 import pymongo
@@ -15,13 +15,14 @@ from pymongo import MongoClient
 from CreationModules import DatabaseCreation as DBCreate
 from CreationModules import FileSearch as FS
 
-# from gevent.lock import Semaphore
-
-
 pd.set_option('max_columns', 40)
+
+ipclient = pyClient()
+print(ipclient.ids)
+ipview = ipclient.load_balanced_view()
+
 client = MongoClient()
 db = client.VentDB
-
 input_log = db.input_log
 breath_col = db.breath_collection
 
@@ -45,6 +46,8 @@ breath_col.create_index([('loc', pymongo.GEO2D)], min = -1,
 FS.file_search()
 FS.file_match()
 
+
+# @ipview.parallel()
 def get_waveform_and_breath(file):
     breath_df = DBCreate.get_breath_data(file)
     wave_df = DBCreate.get_waveform_data(file)
@@ -58,19 +61,20 @@ def get_waveform_and_breath(file):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(8))
 
 for file in files:
-    # print(file)
+    print(file['_id'])
     get_waveform_and_breath(file)
 
 # Query DB for list of EHR files not yet added
 files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
                                       {'type': {'$not': re.compile(r'breath')}},
-                                      {'loaded': 0}]}).limit(3))
+                                      {'type': {'$not': re.compile(r'other')}},
+                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}))
 
 for file in files:
-    print(Path(file['_id']).parent, file)
+    print(file)
 
 # wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
 # gevent.joinall(wave_and_breath_greenlets)
