@@ -245,7 +245,7 @@ def get_waveform_and_breath(file):
     breath_col.insert_many(
         json.loads(
             wave_df.groupby('breath', sort = False).apply(waveform_data_entry,
-                                                          breath_df = breath_df).to_json(
-                orient = 'records')), ordered = False)
+                                                          breath_df = breath_df).to_json(orient = 'records')),
+        ordered = False)
     input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})

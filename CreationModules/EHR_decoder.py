@@ -303,6 +303,7 @@ def load_EHR_data(path, patients):
 
         df['patientID'] = patients
         lab_db.insert_many(df.to_dict(orient = 'records'), ordered = False)
+
     elif ('RT' in path):
         pass
     else:
