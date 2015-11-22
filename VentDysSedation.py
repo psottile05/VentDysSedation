@@ -15,8 +15,6 @@ from pymongo import MongoClient
 from CreationModules import DatabaseCreation as DBCreate
 from CreationModules import FileSearch as FS
 
-pd.set_option('max_columns', 40)
-
 ipclient = Client()
 print(ipclient.ids)
 ipview = ipclient.load_balanced_view()
@@ -62,10 +60,11 @@ def get_waveform_and_breath(file):
 
 # Query DB for list of Waveform/breath files not yet added
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(8))
+get_waveform_and_breath(files)
 
-for file in files:
-    # print(file['_id'])
-    get_waveform_and_breath(file)
+# for file in files:
+#    # print(file['_id'])
+#    get_waveform_and_breath(file)
 
 # Query DB for list of EHR files not yet added
 files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
@@ -76,8 +75,5 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
 for file in files:
     pass
     #print(file)
-
-# wave_and_breath_greenlets = [gevent.spawn(get_waveform_and_breath, file, Semaphore(100)) for file in files]
-# gevent.joinall(wave_and_breath_greenlets)
 
 print(breath_col.find_one())
