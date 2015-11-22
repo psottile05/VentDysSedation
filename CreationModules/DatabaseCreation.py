@@ -6,6 +6,7 @@ import pandas as pd
 import json
 import scipy.signal as sig
 from pymongo import MongoClient
+import AnalysisModules.WaveformAnalysis as wa
 
 client = MongoClient()
 db = client.VentDB
