@@ -4,11 +4,9 @@ __author__ = 'sottilep'
 # monkey.patch_all()
 
 import datetime
-import json
 import re
 from ipyparallel import Client
 
-import pandas as pd
 import pymongo
 from pymongo import MongoClient
 
@@ -45,7 +43,7 @@ FS.file_search()
 FS.file_match()
 
 
-@ipview.parallel(block = True)
+@ipview.parallel()
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation as DBCreate
     for file in files:
