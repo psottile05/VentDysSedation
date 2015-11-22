@@ -47,7 +47,7 @@ FS.file_search()
 FS.file_match()
 
 
-@ipview.parallel()
+@ipview.parallel(block = True)
 def get_waveform_and_breath(file):
     breath_df = DBCreate.get_breath_data(file)
     wave_df = DBCreate.get_waveform_data(file)
