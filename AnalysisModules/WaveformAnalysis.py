@@ -14,3 +14,7 @@ def find_max():
 
 # Insp Min/Max
 # Exp Min/Max
+
+def analyze_breath(mongo_record):
+    print(mongo_record['breath_raw'])
+    return mongo_record
