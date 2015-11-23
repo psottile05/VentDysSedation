@@ -8,7 +8,7 @@ import pandas as pd
 import scipy.signal as sig
 from pymongo import MongoClient
 
-from AnalysisModules import WaveformAnalysis as WA
+# import AnalysisModules.WaveformAnalysis as WA
 
 client = MongoClient()
 db = client.VentDB
@@ -238,7 +238,7 @@ def waveform_data_entry(group, breath_df):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
-    mongo_record = WA.analyze_breath(mongo_record)
+    #mongo_record = WA.analyze_breath(mongo_record)
 
     return mongo_record
 
