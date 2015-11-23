@@ -1,11 +1,13 @@
 __author__ = 'sottilep'
 
+import json
 import re
+
 import numpy as np
 import pandas as pd
-import json
 import scipy.signal as sig
 from pymongo import MongoClient
+
 from AnalysisModules import WaveformAnalysis as WA
 
 client = MongoClient()

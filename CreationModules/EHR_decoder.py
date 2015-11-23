@@ -1,7 +1,6 @@
 import itertools
 import re
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from pymongo import MongoClient
@@ -11,6 +10,7 @@ db = client.VentDB
 lab_db = db.Lab_collection
 RN_db = db.RN_collection
 input_log = db.input_log
+
 
 def data_analysis(fileName):
     raw_data = []
@@ -304,7 +304,7 @@ def load_EHR_data(path, patients):
         df['patientID'] = patients
         lab_db.insert_many(df.to_dict(orient = 'records'), ordered = False)
 
-    elif ('RT' in path):
+    elif 'RT' in path:
         pass
     else:
         print(path, 'unknown file type')

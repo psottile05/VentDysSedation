@@ -1,9 +1,10 @@
 __author__ = 'sottilep'
 
-from pathlib import Path
-from pymongo import MongoClient, errors
-import re
 import datetime
+import re
+from pathlib import Path
+
+from pymongo import MongoClient, errors
 
 client = MongoClient()
 db = client.VentDB

@@ -2,9 +2,11 @@ __author__ = 'sottilep'
 
 import datetime
 import re
-from ipyparallel import Client
+
 import pymongo
+from ipyparallel import Client
 from pymongo import MongoClient
+
 from CreationModules import FileSearch as FS
 
 ipclient = Client()
@@ -49,6 +51,7 @@ def make_EHR_data(files):
     import CreationModules.EHR_decoder as EHR
     for file in files:
         EHR.load_EHR_data(file['_id'], file['patient_id'])
+
 
 # Query DB for list of Waveform/breath files not yet added
 files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
