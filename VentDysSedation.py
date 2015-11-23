@@ -39,9 +39,9 @@ FS.file_match()
 
 @ipview.parallel(block = True)
 def make_waveform_and_breath(files):
-    import CreationModules.DatabaseCreation as DBCreate
+    from CreationModules.DatabaseCreation import get_waveform_and_breath
     for file in files:
-        DBCreate.get_waveform_and_breath(file)
+        get_waveform_and_breath(file)
 
 
 @ipview.parallel(block = True)
