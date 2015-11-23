@@ -179,14 +179,14 @@ def data_analysis(fileName):
 
     df = pd.DataFrame.from_dict(found_items['DateTime']['values'])
     df.rename(columns = {0: 'date_time'}, inplace = True)
-    df['date_time'] = pd.to_datetime(df['date_time'])
+    df['date_time'] = pd.to_datetime(df['date_time'], infer_datetime_format = True)
     df.drop_duplicates(subset = 'date_time', inplace = True, keep = 'first')
     df.set_index('date_time', inplace = True, drop = True, verify_integrity = True)
 
     temp_df = pd.DataFrame(dicts)
     temp_df.replace(to_replace = '', value = np.nan, inplace = True)
     temp_df.replace(to_replace = '--', value = np.nan, inplace = True)
-    temp_df['DateTime'] = pd.to_datetime(temp_df['DateTime'])
+    temp_df['DateTime'] = pd.to_datetime(temp_df['DateTime'], infer_datetime_format = True)
     temp_df.set_index('DateTime', inplace = True, drop = True)
     temp_df.dropna(inplace = True, axis = 0, how = 'all')
 
