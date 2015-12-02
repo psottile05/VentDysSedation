@@ -17,5 +17,8 @@ def find_max():
 # Exp Min/Max
 
 def analyze_breath(mongo_record):
-    print(mongo_record['breath_raw'])
+    print(mongo_record.keys())
+    raw_df = pd.DataFrame(mongo_record['breath_raw'])
+    print(raw_df.columns)
+
     return mongo_record

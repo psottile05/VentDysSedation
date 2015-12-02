@@ -7,8 +7,7 @@ import numpy as np
 import pandas as pd
 import scipy.signal as sig
 from pymongo import MongoClient
-
-# import AnalysisModules.WaveformAnalysis as WA
+import AnalysisModules.WaveformAnalysis as WA
 
 client = MongoClient()
 db = client.VentDB
@@ -217,6 +216,9 @@ def waveform_data_entry(group, breath_df):
         'sm_paw': group.sm_paw.values,
         'sm_flow': group.sm_flow.values,
         'sm_vol': group.sm_vol.values,
+        'dF/dT': group['flow_dt'].values,
+        'dP/dT': group['paw_dt'].values,
+        'dV/dT': group['vol_dt'].values,
         'dF/dV': group['dF/dV'].values,
         'dP/dV': group['dP/dV'].values,
         'dF/dP': group['dF/dP'].values
@@ -227,7 +229,7 @@ def waveform_data_entry(group, breath_df):
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
                + '/' + str(start_time),
-        'patient_ID': int(group.patient_ID.head(1)),
+        'patient_id': int(group.patient_ID.head(1)),
         'file': group.file.head(1).values[0],
         'breath_num': group.breath.min(),
         'date_time': group.date_time.min().timestamp(),
@@ -238,7 +240,7 @@ def waveform_data_entry(group, breath_df):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
-    #mongo_record = WA.analyze_breath(mongo_record)
+    mongo_record = WA.analyze_breath(mongo_record)
 
     return mongo_record
 
