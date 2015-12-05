@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from ggplot import *
 from pymongo import MongoClient
-import scipy.signal as sig
 
 client = MongoClient()
 db = client.VentDB
@@ -11,8 +10,6 @@ breath_db = db.breath_collection
 
 def breath_viz(id):
     breath = list(breath_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
-
-    print(breath['breath_raw'].keys())
     breath_start = breath['breath_raw']['time'][0]
     breath_end = breath['breath_raw']['time'][-1]
 
@@ -93,46 +90,66 @@ def breath_viz(id):
     min_time.reverse()
     min_value.reverse()
 
-    if min_time[0] > max_time[0]:
-        for index, max in enumerate(max_time):
+    max_time = [(x, 1, y) for x, y in zip(max_time, max_value)]
+    min_time = [(x, -1, y) for x, y in zip(min_time, min_value)]
+
+    max_min_time = max_time + min_time
+    max_min_time.sort(key = lambda x: x[0])
+
+    def clean_max_min(max_min_time):
+        for index, items in enumerate(max_min_time):
             try:
-                if max < min_time[index] < max_time[index + 1] < min_time[index + 1]:
+                if index == 0:
                     pass
-                elif max < max_time[index + 1] < min_time[index]:
-                    if max_value[index] > max_value[index + 1]:
-                        max_time.pop(index + 1)
-                    elif max_value[index] < max_value[index + 1]:
-                        max_time.pop(index)
-                elif min_time[index - 1] < min_time[index] < max:
-                    if min_value[index] > min_value[index - 1]:
-                        min_time.pop(index)
-                    elif min_value[index] < min_value[index - 1]:
-                        min_time.pop(index - 1)
+                elif -items[1] == max_min_time[index + 1][1] and -items[1] == max_min_time[index - 1][1]:
+                    if max_min_time[index + 1][0] - items[0] < 64:
+                        max_min_time.pop(index + 1)
+                        max_min_time.pop(index)
+                    elif max_min_time[index - 1][2] < items[2] < max_min_time[index + 1][2] or max_min_time[index - 1][
+                        2] > items[2] > max_min_time[index + 1][2]:
+                        max_min_time.pop(index)
+                elif -items[1] != max_min_time[index + 1][1]:
+                    if items[1] == 1:
+                        if items[2] > max_min_time[index + 1][2]:
+                            max_min_time.pop(index + 1)
+                        elif items[2] < max_min_time[index + 1][2]:
+                            max_min_time.pop(index)
+                    else:
+                        if items[2] > max_min_time[index + 1][2]:
+                            max_min_time.pop(index)
+                        elif items[2] < max_min_time[index + 1][2]:
+                            max_min_time.pop(index + 1)
+                elif -items[1] != max_min_time[index - 1][1]:
+                    if items[1] == 1:
+                        if items[2] > max_min_time[index - 1][2]:
+                            max_min_time.pop(index - 1)
+                        elif items[2] < max_min_time[index - 1][2]:
+                            max_min_time.pop(index)
+                    else:
+                        if items[2] > max_min_time[index - 1][2]:
+                            max_min_time.pop(index)
+                        elif items[2] < max_min_time[index - 1][2]:
+                            max_min_time.pop(index - 1)
+                elif items[1] == 1 and items[2] < max_min_time[index + 1][2]:
+                    max_min_time.pop(index)
                 else:
-                    print(index, max, min_time[index], max_time[index + 1], min_time[index + 1])
+                    print(index, items, max_min_time[index + 1])
             except IndexError:
                 pass
 
-    elif min_time[0] < max_time[0]:
-        for index, max in enumerate(max_time):
-            try:
-                if min_time[index] < max < min_time[index + 1] < max_time[index + 1]:
-                    pass
-                elif max < max_time[index + 1] < min_time[index + 1]:
-                    if max_value[index] > max_value[index + 1]:
-                        print(index, max, max_time[index + 1], min_time[index + 1])
-                        max_time.pop(index + 1)
-                    elif max_value[index] < max_value[index + 1]:
-                        max_time.pop(index)
-                elif min_time[index] < min_time[index + 1] < max:
-                    if min_value[index] > min_value[index + 1]:
-                        min_time.pop(index)
-                    elif min_value[index] < min_value[index + 1]:
-                        min_time.pop(index + 1)
-                else:
-                    print(index, max, min_time[index], max_time[index + 1], min_time[index + 1])
-            except IndexError:
-                pass
+        return max_min_time
+
+    max_min_time = clean_max_min(max_min_time)
+    max_min_time = clean_max_min(max_min_time)
+
+    max_time = []
+    min_time = []
+
+    for items in max_min_time:
+        if items[1] == 1:
+            max_time.append(items[0])
+        else:
+            min_time.append(items[0])
 
     p = ggplot(aes(x = 'time', y = 'sm_flow'), data = df) + geom_line()
     p = p + geom_vline(xintercept = [breath_start, breath_end], color = 'blue')
@@ -141,7 +158,7 @@ def breath_viz(id):
     print(p)
 
 
-results = breath_db.find().limit(2)
+results = breath_db.find().limit(50)
 for items in list(results):
     print(items['_id'])
     breath_viz(items['_id'])
