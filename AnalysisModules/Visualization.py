@@ -151,13 +151,13 @@ def breath_viz(id):
             max_time.append(items[0])
         else:
             min_time.append(items[0])
-    '''
+
     p = ggplot(aes(x = 'time', y = 'sm_flow'), data = df) + geom_line()
     p = p + geom_vline(xintercept = [breath_start, breath_end], color = 'blue')
     p = p + geom_vline(xintercept = max_time, color = 'green')
     p = p + geom_vline(xintercept = min_time, color = 'red')
     print(p)
-    '''
+
 
 results = breath_db.find().limit(50)
 for items in list(results):
