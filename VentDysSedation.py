@@ -8,7 +8,8 @@ from ipyparallel import Client
 from pymongo import MongoClient
 
 from CreationModules import FileSearch as FS
-from AnalysisModules import Visualization as viz
+
+# from AnalysisModules import Visualization as viz
 
 ipclient = Client()
 print(ipclient.ids)
@@ -40,7 +41,7 @@ FS.file_search()
 FS.file_match()
 
 
-@ipview.parallel(block = True)
+#@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
@@ -55,14 +56,14 @@ def make_EHR_data(files):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(10))
 make_waveform_and_breath(files)
 
 # Query DB for list of EHR files not yet added
 files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
                                       {'type': {'$not': re.compile(r'breath')}},
                                       {'type': {'$not': re.compile(r'other')}},
-                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(1))
+                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(10))
 make_EHR_data(files)
 
 for items in input_log.find({'loaded': 1}, {'type': 1}):
