@@ -16,16 +16,6 @@ def second_deriv(raw_df):
 
     return raw_df
 
-def find_min():
-    pass
-
-
-def find_max():
-    pass
-
-
-# Insp Min/Max
-# Exp Min/Max
 
 def analyze_breath(mongo_record):
     raw_df = pd.DataFrame(mongo_record['breath_raw'])
