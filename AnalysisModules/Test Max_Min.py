@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from pymongo import MongoClient
-from ggplot import *
 
 client = MongoClient()
 db = client.VentDB
@@ -28,7 +27,7 @@ def concav(x):
 
 
 # max_min_time is a tuple (time, concav direction, value)
-def find_max_min(name, time, curve, max_min_time):
+def find_max_min(name, time, curve):
     if name > 0 and curve.shape[0] > 2:
         loc_max = curve.argmax()
         time_max = time[loc_max]
@@ -100,7 +99,7 @@ def breath_getter(id):
     curve = 'sm_flow'
 
     for name, groups in grouped:
-        result = find_max_min(name, groups['time'].values, groups[curve].values, max_min_time)
+        result = find_max_min(name, groups['time'].values, groups[curve].values)
         if result is not None:
             max_min_time.append(result)
 
@@ -111,22 +110,6 @@ def breath_getter(id):
     max_min_time = clean_max_min(max_min_time)
 
 
-def print_plot(breath_df, max_min_time):
-    max_time = []
-    min_time = []
-
-    for items in max_min_time:
-        if items[1] == 1:
-            max_time.append(items[0])
-        else:
-            min_time.append(items[0])
-
-    p = ggplot(aes(x = 'time', y = 'sm_flow'), data = breath_df) + geom_line()
-    p = p + geom_vline(xintercept = max_time, color = 'green')
-    p = p + geom_vline(xintercept = min_time, color = 'red')
-    print(p)
-
-
-results = breath_db.find().limit(100)
+results = breath_db.find().limit(1000)
 for items in list(results):
     breath_getter(items['_id'])
