@@ -1,8 +1,4 @@
 import pandas as pd
-import numpy as np
-import scipy as sp
-import scipy.signal as sig
-import numba
 
 
 def second_deriv(raw_df):
@@ -94,7 +90,7 @@ def clean_max_min(max_min_time):
 
 
 def breath_getter(breath_df):
-    for curve in ['sm_flow', 'sm_paw', 'sm_vol']
+    for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
         global last_value
         last_value = 0
 
@@ -124,6 +120,7 @@ def breath_getter(breath_df):
         max_min_time = clean_max_min(max_min_time)
 
     return max_min_time
+
 
 def analyze_breath(mongo_record):
     raw_df = pd.DataFrame(mongo_record['breath_raw'])
