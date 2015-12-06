@@ -33,16 +33,16 @@ def concav(x):
 
 
 # max_min_time is a tuple (time, concav direction, value)
-def find_max_min(name, time, curve):
+def find_max_min(name, time, curve, curve_type):
     if name > 0 and curve.shape[0] > 2:
         loc_max = curve.argmax()
         time_max = time[loc_max]
-        return time_max, 1, curve[loc_max]
+        return time_max, 1, curve[loc_max], curve_type
 
     elif name <= 0 and curve.shape[0] > 2:
         loc_min = curve.argmin()
         time_min = time[loc_min]
-        return time_min, -1, curve[loc_min]
+        return time_min, -1, curve[loc_min], curve_type
 
 
 def clean_max_min(max_min_time):
@@ -90,6 +90,7 @@ def clean_max_min(max_min_time):
 
 
 def breath_getter(breath_df):
+    max_min_df = pd.DataFrame()
     for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
         global last_value
         last_value = 0
@@ -109,7 +110,7 @@ def breath_getter(breath_df):
         max_min_time = []
 
         for name, groups in grouped:
-            result = find_max_min(name, groups['time'].values, groups[curve].values)
+            result = find_max_min(name, groups['time'].values, groups[curve].values, curve)
             if result is not None:
                 max_min_time.append(result)
 
@@ -119,13 +120,70 @@ def breath_getter(breath_df):
         max_min_time = clean_max_min(max_min_time)
         max_min_time = clean_max_min(max_min_time)
 
-    return max_min_time
+        max_min_temp_df = pd.DataFrame.from_records(max_min_time, columns = ['time', 'max_min', 'value', 'curve'])
+        max_min_df = pd.concat([max_min_temp_df, max_min_df])
+
+    return max_min_df
+
+
+def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
+    insp_time = end_insp_time - start_time,
+    exp_time = end_time - end_insp_time,
+    elapse_time = end_time - start_time
+
+    max_min_df['curve'] = max_min_df['curve'].astype('category')
+    grouped = max_min_df.groupby('curve')
+
+    for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
+        analysis_df = grouped.get_group(curve).groupby('max_min')
+        print(analysis_df.get_group(-1).head())
+        '''
+        max_min_data = {'n_insp_max':
+                        'n_insp_max_25':
+                        'n_insp_max_50':
+                        'n_insp_max_75':
+                        'n_insp_max_90':
+                        'insp_rise':
+                        'insp_rise_25':
+                        'insp_rise_50':
+                        'insp_rise_75':
+                        'delta_insp_max':
+                        'delta_insp_max_25':
+                        'delta_insp_max_50':
+                        'delta_insp_max_75':
+                        'n_insp_min':
+                        'n_insp_min_25':
+                        'n_insp_min_50':
+                        'n_insp_min_75':
+                        'insp_ptp_max_delta':
+                        'insp_ptp_min_delta':
+                        'insp_ptp_time_delta':
+                        'insp_ptp_rel_position':
+
+                        'n_exp_max':
+                        'n_exp_max_25':
+                        'n_exp_max_50':
+                        'n_exp_max_75:'}
+        max_min_data_tot = {curve:max_min_data}
+        '''
+        # return max_min_data_tot
 
 
 def analyze_breath(mongo_record):
     raw_df = pd.DataFrame(mongo_record['breath_raw'])
     raw_df = second_deriv(raw_df)
-    max_min_df = breath_getter(raw_df)
     breath_raw = raw_df.to_dict(orient = 'list')
     mongo_record['breath_raw'] = breath_raw
+
+    max_min_df = breath_getter(raw_df)
+    max_min_raw = max_min_df.to_dict(orient = 'list')
+    mongo_record['max_min_raw'] = max_min_raw
+
+    breath_char = mongo_record['breath_character']
+    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], breath_char['start_time'],
+                                   breath_char['end_insp_time'], breath_char['end_time'])
+
+    # breath_char.update(max_min_data)
+    mongo_record['breath_caracter'] = breath_char
+
     return mongo_record
