@@ -127,22 +127,31 @@ def breath_getter(breath_df):
 
 
 def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
-    insp_time = end_insp_time - start_time,
-    exp_time = end_time - end_insp_time,
+    insp_time = end_insp_time - start_time
+    exp_time = end_time - end_insp_time
     elapse_time = end_time - start_time
+
+    insp_25_time = start_time + (0.25 * insp_time)
+    insp_75_time = start_time + (0.75 * insp_time)
+    insp_90_time = start_time + (0.90 * insp_time)
+    exp_25_time = end_insp_time + (0.25 * exp_time)
+    exp_75_time = end_insp_time + (0.75 * exp_time)
 
     max_min_df['curve'] = max_min_df['curve'].astype('category')
     grouped = max_min_df.groupby('curve')
 
     for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
-        analysis_df = grouped.get_group(curve).groupby('max_min')
-        print(analysis_df.get_group(-1).head())
+        analysis_df = grouped.get_group(curve).set_index('time')
+        max_df = analysis_df.groupby('max_min').get_group(1)
+        min_df = analysis_df.groupby('max_min').get_group(-1)
+
+
         '''
-        max_min_data = {'n_insp_max':
-                        'n_insp_max_25':
-                        'n_insp_max_50':
-                        'n_insp_max_75':
-                        'n_insp_max_90':
+        max_min_data = {'n_insp_max': max_df['value'].loc[start_time:end_insp_time].shape[0]
+                        'n_insp_max_25': max_df['value'].loc[start_time:insp_25_time].shape[0]
+                        'n_insp_max_50': max_df['value'].loc[insp_25_time:insp_75_time].shape[0]
+                        'n_insp_max_75': max_df['value'].loc[insp_75_time:end_insp_time].shape[0]
+                        'n_insp_max_90': max_df['value'].loc[insp_90_time:end_insp_time].shape[0]
                         'insp_rise':
                         'insp_rise_25':
                         'insp_rise_50':
@@ -180,8 +189,8 @@ def analyze_breath(mongo_record):
     mongo_record['max_min_raw'] = max_min_raw
 
     breath_char = mongo_record['breath_character']
-    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], breath_char['start_time'],
-                                   breath_char['end_insp_time'], breath_char['end_time'])
+    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], float(breath_char['start_time']),
+                                   float(breath_char['end_insp_time']), float(breath_char['end_time']))
 
     # breath_char.update(max_min_data)
     mongo_record['breath_caracter'] = breath_char
