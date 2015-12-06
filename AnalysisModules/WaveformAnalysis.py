@@ -37,12 +37,12 @@ def find_max_min(name, time, curve):
     if name > 0 and curve.shape[0] > 2:
         loc_max = curve.argmax()
         time_max = time[loc_max]
-        return (time_max, 1, curve[loc_max])
+        return time_max, 1, curve[loc_max]
 
     elif name <= 0 and curve.shape[0] > 2:
         loc_min = curve.argmin()
         time_min = time[loc_min]
-        return (time_min, -1, curve[loc_min])
+        return time_min, -1, curve[loc_min]
 
 
 def clean_max_min(max_min_time):
@@ -54,8 +54,8 @@ def clean_max_min(max_min_time):
                 if max_min_time[index + 1][0] - items[0] < 128:
                     max_min_time.pop(index + 1)
                     max_min_time.pop(index)
-                elif max_min_time[index - 1][2] < items[2] < max_min_time[index + 1][2] or max_min_time[index - 1][
-                    2] > items[2] > max_min_time[index + 1][2]:
+                elif max_min_time[index - 1][2] < items[2] < max_min_time[index + 1][2] or max_min_time[index - 1][2] \
+                        > items[2] > max_min_time[index + 1][2]:
                     max_min_time.pop(index)
             elif -items[1] != max_min_time[index + 1][1]:
                 if items[1] == 1:
