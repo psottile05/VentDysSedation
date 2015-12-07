@@ -145,37 +145,47 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
         max_df = analysis_df.groupby('max_min').get_group(1)
         min_df = analysis_df.groupby('max_min').get_group(-1)
 
+        max_min_data = {'n_insp_max': max_df['value'].loc[start_time:end_insp_time].shape[0],
+                        'n_insp_max_25': max_df['value'].loc[start_time:insp_25_time].shape[0],
+                        'n_insp_max_50': max_df['value'].loc[insp_25_time:insp_75_time].shape[0],
+                        'n_insp_max_75': max_df['value'].loc[insp_75_time:end_insp_time].shape[0],
+                        'n_insp_max_90': max_df['value'].loc[insp_90_time:end_insp_time].shape[0],
+                        'n_insp_min': min_df['value'].loc[start_time:end_insp_time].shape[0],
+                        'n_insp_min_25': min_df['value'].loc[start_time:insp_25_time].shape[0],
+                        'n_insp_min_50': min_df['value'].loc[insp_25_time:insp_75_time].shape[0],
+                        'n_insp_min_75': min_df['value'].loc[insp_75_time:end_insp_time].shape[0],
+                        'n_exp_max': max_df['value'].loc[end_insp_time:end_time].shape[0],
+                        'n_exp_max_25': max_df['value'].loc[end_insp_time:exp_25_time].shape[0],
+                        'n_exp_max_50': max_df['value'].loc[exp_25_time:exp_75_time].shape[0],
+                        'n_exp_max_75': max_df['value'].loc[exp_75_time:end_time].shape[0]
+                        }
 
-        '''
-        max_min_data = {'n_insp_max': max_df['value'].loc[start_time:end_insp_time].shape[0]
-                        'n_insp_max_25': max_df['value'].loc[start_time:insp_25_time].shape[0]
-                        'n_insp_max_50': max_df['value'].loc[insp_25_time:insp_75_time].shape[0]
-                        'n_insp_max_75': max_df['value'].loc[insp_75_time:end_insp_time].shape[0]
-                        'n_insp_max_90': max_df['value'].loc[insp_90_time:end_insp_time].shape[0]
-                        'insp_rise':
-                        'insp_rise_25':
-                        'insp_rise_50':
-                        'insp_rise_75':
-                        'delta_insp_max':
-                        'delta_insp_max_25':
-                        'delta_insp_max_50':
-                        'delta_insp_max_75':
-                        'n_insp_min':
-                        'n_insp_min_25':
-                        'n_insp_min_50':
-                        'n_insp_min_75':
-                        'insp_ptp_max_delta':
-                        'insp_ptp_min_delta':
-                        'insp_ptp_time_delta':
-                        'insp_ptp_rel_position':
+        if max_min_data['n_insp_max'] > 0:
+            max_value = max_df['value'].max()
+            max_min_data['insp_rise'] =
 
-                        'n_exp_max':
-                        'n_exp_max_25':
-                        'n_exp_max_50':
-                        'n_exp_max_75:'}
+            if max_min_data['n_insp_max'] > 1:
+                max_min_data['delta_insp_max'] =
+                max_min_data['insp_ptp_max_delta'] =
+                max_min_data['insp_ptp_min_delta'] =
+                max_min_data['insp_ptp_time_delta'] =
+                max_min_data['insp_ptp_rel_position'] =
+
+            if max_min_data['n_insp_max_25'] > 0:
+                max_min_data['insp_rise_25'] =
+                max_min_data['delta_insp_max_25'] =
+
+            if max_min_data['n_insp_max_50'] > 0:
+                max_min_data['insp_rise_50'] =
+                max_min_data['delta_insp_max_50'] =
+
+            if max_min_data['n_insp_max_75'] > 0:
+                max_min_data['insp_rise_75'] =
+                max_min_data['delta_insp_max_75'] =
+
         max_min_data_tot = {curve:max_min_data}
-        '''
-        # return max_min_data_tot
+
+    return max_min_data_tot
 
 
 def analyze_breath(mongo_record):
@@ -191,8 +201,6 @@ def analyze_breath(mongo_record):
     breath_char = mongo_record['breath_character']
     max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], float(breath_char['start_time']),
                                    float(breath_char['end_insp_time']), float(breath_char['end_time']))
-
-    # breath_char.update(max_min_data)
-    mongo_record['breath_caracter'] = breath_char
+    mongo_record['max_min_analysis'] = max_min_data
 
     return mongo_record
