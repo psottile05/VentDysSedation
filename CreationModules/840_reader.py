@@ -8,7 +8,7 @@ from bokeh.io import vform
 from bokeh.models.widgets import CheckboxButtonGroup, Button
 
 
-# @numba.jit(nopython = True, nogil = True, cache = True)
+@numba.jit(nopython = True, nogil = True, cache = True)
 def count_breath(flow):
     index = 0
     count = 0
@@ -16,11 +16,11 @@ def count_breath(flow):
     sample_rate = 0.06511627
 
     n = len(flow)
-    breath = np.empty(n)
-    status = np.empty(n)
-    vol = np.empty(n)
+    breath = np.empty_like(flow)
+    status = np.empty_like(flow)
+    vol = np.empty_like(flow)
 
-    for x in np.nditer(flow):
+    for rindex, x in np.ndenumerate(flow):
         if np.isnan(x):
             count += 0.5
         elif x < 2:
@@ -34,7 +34,6 @@ def count_breath(flow):
 
         index += 1
 
-    vol = np.cumsum(vol)
     return breath, status, vol
 
 
@@ -47,10 +46,9 @@ df.flow = pd.to_numeric(df.flow, errors = 'coerce')
 df.paw = pd.to_numeric(df.paw, errors = 'coerce')
 
 df['breath'], df['status'], df['vol'] = count_breath(df.flow.values)
-
-print(df.head(30))
-
 df.dropna(axis = 0, how = 'all', subset = ['flow'], inplace = True)
+
+df.vol = df.groupby('breath')['vol'].cumsum()
 
 p = Line(df, x = 'index', y = ['flow', 'paw', 'vol', 'breath', 'status'], color = 'red')
 p.extra_y_ranges = {'flow': Range1d(start = 0, end = 30)}
@@ -64,7 +62,4 @@ output_file('test.html')
 
 show(vform(p, check_button, next_button))
 
-grouped = df.groupby('breath')
 
-for name, group in grouped:
-    print(name, group.shape, 14 / group.shape[0])
