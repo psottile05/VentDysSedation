@@ -19,6 +19,7 @@ def count_breath(flow):
     breath = np.empty_like(flow)
     status = np.empty_like(flow)
     vol = np.empty_like(flow)
+    time = np.empty_like(flow)
 
     for rindex, x in np.ndenumerate(flow):
         if np.isnan(x):
@@ -31,6 +32,7 @@ def count_breath(flow):
         vol[index] = x * sample_rate
         breath[index] = count
         status[index] = direction
+        time[index] = int(count * sample_rate * 1000)
 
         index += 1
 

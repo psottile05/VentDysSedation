@@ -159,10 +159,10 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
                         'n_exp_max_50': max_df['value'].loc[exp_25_time:exp_75_time].shape[0],
                         'n_exp_max_75': max_df['value'].loc[exp_75_time:end_time].shape[0]
                         }
-        '''
+
         if max_min_data['n_insp_max'] > 0:
             max_value = max_df['value'].max()
-            max_min_data['insp_rise'] =
+            max_min_data['insp_rise'] = max_df['time'].iloc[max_df['value'].idxmax()] - max_df['time'].min()
 
             if max_min_data['n_insp_max'] > 1:
                 max_min_data['delta_insp_max'] =
@@ -182,7 +182,7 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
             if max_min_data['n_insp_max_75'] > 0:
                 max_min_data['insp_rise_75'] =
                 max_min_data['delta_insp_max_75'] =
-        '''
+
         max_min_data_tot = {curve:max_min_data}
 
     return max_min_data_tot
