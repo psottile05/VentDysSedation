@@ -161,27 +161,35 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
                         }
 
         if max_min_data['n_insp_max'] > 0:
-            max_value = max_df['value'].max()
-            max_min_data['insp_rise'] = max_df['time'].iloc[max_df['value'].idxmax()] - max_df['time'].min()
+            max_value = max_df['value'].loc[start_time:end_insp_time].max()
+            max_min_data['insp_rise'] = max_df['value'].loc[start_time:end_insp_time].idxmax() - start_time
+
+            if max_min_data['n_insp_max_25'] > 0:
+                max_min_data['insp_rise_25'] = max_df['value'].loc[start_time:insp_25_time].idxmax() - start_time
+                max_min_data['delta_insp_max_25'] = max_value - max_df['value'].loc[start_time:insp_25_time].max()
+
+            if max_min_data['n_insp_max_50'] > 0:
+                max_min_data['insp_rise_50'] = max_df['value'].loc[insp_25_time:insp_75_time].idxmax() - start_time
+                max_min_data['delta_insp_max_50'] = max_value - max_df['value'].loc[exp_25_time:exp_75_time].max()
+
+            if max_min_data['n_insp_max_75'] > 0:
+                max_min_data['insp_rise_75'] = max_df['value'].loc[insp_75_time:end_insp_time].idxmax() - start_time
+                max_min_data['delta_insp_max_75'] = max_value - max_df['value'].loc[insp_75_time:end_insp_time].max()
 
             if max_min_data['n_insp_max'] > 1:
+                max_df.pop(max_df['value'].loc[start_time:end_insp_time].idxmax())
+
+                max_value2 = max_df['value'].loc[start_time:end_insp_time].max()
+
                 max_min_data['delta_insp_max'] =
                 max_min_data['insp_ptp_max_delta'] =
                 max_min_data['insp_ptp_min_delta'] =
                 max_min_data['insp_ptp_time_delta'] =
                 max_min_data['insp_ptp_rel_position'] =
+            '''
 
-            if max_min_data['n_insp_max_25'] > 0:
-                max_min_data['insp_rise_25'] =
-                max_min_data['delta_insp_max_25'] =
 
-            if max_min_data['n_insp_max_50'] > 0:
-                max_min_data['insp_rise_50'] =
-                max_min_data['delta_insp_max_50'] =
 
-            if max_min_data['n_insp_max_75'] > 0:
-                max_min_data['insp_rise_75'] =
-                max_min_data['delta_insp_max_75'] =
 
         max_min_data_tot = {curve:max_min_data}
 

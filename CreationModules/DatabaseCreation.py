@@ -59,14 +59,14 @@ def get_breath_data(file):
                                     'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
                                     'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
                                     'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
-                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
+                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)', '!High Pressure'])
         df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
                              'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
                              'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
                              'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
                              'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
                              'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
-                             'P mean (cmH2O)': 'mean_paw',
+                             'P mean (cmH2O)': 'mean_paw', '!High Pressure': 'high_paw_alarm',
                              'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
                              'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
                              'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
@@ -83,7 +83,7 @@ def get_breath_data(file):
                  'leak': 'float64',
                  'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
                  'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
-                 't_exp': 'float64',
+                 't_exp': 'float64', 'high_paw_alarm': 'object',
                  'compliance': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
 
         date_check(df)
