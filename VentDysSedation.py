@@ -56,7 +56,7 @@ def make_EHR_data(files):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(1))
+files = list(input_log.find({'type': 'waveform', 'loaded': 0}).limit(10))
 make_waveform_and_breath(files)
 
 # Query DB for list of EHR files not yet added
@@ -66,5 +66,5 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
                                       {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(1))
 make_EHR_data(files)
 
-for items in input_log.find({'loaded': 1}, {'type': 1}):
+for items in input_log.find({'loaded': 1}, {'type': 10}):
     print(items)

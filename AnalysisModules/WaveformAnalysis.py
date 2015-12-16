@@ -1,5 +1,5 @@
 import pandas as pd
-
+import pprint
 
 def second_deriv(raw_df):
     raw_df['sm_dF/dT'] = raw_df['sm_flow'].diff()
@@ -127,6 +127,8 @@ def breath_getter(breath_df):
 
 
 def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
+    max_min_data_tot = {}
+
     insp_time = end_insp_time - start_time
     exp_time = end_time - end_insp_time
     elapse_time = end_time - start_time
@@ -134,6 +136,7 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
     insp_25_time = start_time + (0.25 * insp_time)
     insp_75_time = start_time + (0.75 * insp_time)
     insp_90_time = start_time + (0.90 * insp_time)
+    exp_15_time = end_insp_time + (0.15 * exp_time)
     exp_25_time = end_insp_time + (0.25 * exp_time)
     exp_75_time = end_insp_time + (0.75 * exp_time)
 
@@ -155,43 +158,46 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time):
                         'n_insp_min_50': min_df['value'].loc[insp_25_time:insp_75_time].shape[0],
                         'n_insp_min_75': min_df['value'].loc[insp_75_time:end_insp_time].shape[0],
                         'n_exp_max': max_df['value'].loc[end_insp_time:end_time].shape[0],
+                        'n_exp_max_15': max_df['value'].loc[end_insp_time:exp_15_time].shape[0],
                         'n_exp_max_25': max_df['value'].loc[end_insp_time:exp_25_time].shape[0],
                         'n_exp_max_50': max_df['value'].loc[exp_25_time:exp_75_time].shape[0],
                         'n_exp_max_75': max_df['value'].loc[exp_75_time:end_time].shape[0]
                         }
-
         if max_min_data['n_insp_max'] > 0:
             max_value = max_df['value'].loc[start_time:end_insp_time].max()
-            max_min_data['insp_rise'] = max_df['value'].loc[start_time:end_insp_time].idxmax() - start_time
+            max_loc = max_df['value'].loc[start_time:end_insp_time].idxmax()
+            max_min_data['insp_rise'] = (max_value - raw_df[curve.strip('sm_')]) / (max_loc - start_time)
 
             if max_min_data['n_insp_max_25'] > 0:
-                max_min_data['insp_rise_25'] = max_df['value'].loc[start_time:insp_25_time].idxmax() - start_time
-                max_min_data['delta_insp_max_25'] = max_value - max_df['value'].loc[start_time:insp_25_time].max()
+                max_min_data['insp_25_max'] = max_df['value'].loc[start_time:insp_25_time].max()
+                max_min_data['insp_rise_25'] = (max_min_data['insp_25_max'] - raw_df[curve.strip('sm_')]) / (
+                max_df['value'].loc[start_time:insp_25_time].idxmax() - start_time)
+                max_min_data['delta_insp_max_25'] = max_value - max_min_data['insp_25_max']
 
             if max_min_data['n_insp_max_50'] > 0:
-                max_min_data['insp_rise_50'] = max_df['value'].loc[insp_25_time:insp_75_time].idxmax() - start_time
-                max_min_data['delta_insp_max_50'] = max_value - max_df['value'].loc[exp_25_time:exp_75_time].max()
+                max_min_data['insp_50_max'] = max_df['value'].loc[insp_25_time:insp_75_time].max()
+                max_min_data['insp_rise_50'] = (max_min_data['insp_50_max'] - raw_df[curve.strip('sm_')]) / (
+                max_df['value'].loc[insp_25_time:insp_75_time].idxmax() - start_time)
+                max_min_data['delta_insp_max_50'] = max_value - max_min_data['insp_50_max']
 
             if max_min_data['n_insp_max_75'] > 0:
-                max_min_data['insp_rise_75'] = max_df['value'].loc[insp_75_time:end_insp_time].idxmax() - start_time
-                max_min_data['delta_insp_max_75'] = max_value - max_df['value'].loc[insp_75_time:end_insp_time].max()
+                max_min_data['insp_75_max'] = max_df['value'].loc[insp_75_time:end_insp_time].max()
+                max_min_data['insp_rise_75'] = (max_min_data['insp_75_max'] - raw_df[curve.strip('sm_')]) / (
+                max_df['value'].loc[insp_75_time:end_insp_time].idxmax() - start_time)
+                max_min_data['delta_insp_max_75'] = max_value - max_min_data['insp_75_max']
 
-            if max_min_data['n_insp_max'] > 1:
-                max_df.pop(max_df['value'].loc[start_time:end_insp_time].idxmax())
+            if max_min_data['n_insp_max'] >= 2:
+                max_df.drop(max_df['value'].loc[start_time:end_insp_time].idxmax(), inplace = True)
 
                 max_value2 = max_df['value'].loc[start_time:end_insp_time].max()
+                max_loc2 = max_df['value'].loc[start_time:end_insp_time].idxmax()
+                print(min_df['value'].loc[max_loc:max_loc2])
+                max_min_data['delta_insp_max'] = max_value2
+                max_min_data['insp_ptp_max_delta'] = max_value - max_value2
+                max_min_data['insp_ptp_time_delta'] = max_loc - max_loc2
+                max_min_data['insp_ptp_rel_position'] = max_loc / end_insp_time
 
-                max_min_data['delta_insp_max'] =
-                max_min_data['insp_ptp_max_delta'] =
-                max_min_data['insp_ptp_min_delta'] =
-                max_min_data['insp_ptp_time_delta'] =
-                max_min_data['insp_ptp_rel_position'] =
-            '''
-
-
-
-
-        max_min_data_tot = {curve:max_min_data}
+        max_min_data_tot[curve] = max_min_data
 
     return max_min_data_tot
 
