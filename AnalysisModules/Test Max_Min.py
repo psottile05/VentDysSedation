@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pymongo import MongoClient
+from ggplot import *
 
 client = MongoClient()
 db = client.VentDB
@@ -27,59 +28,52 @@ def concav(x):
 
 
 # max_min_time is a tuple (time, concav direction, value)
-def find_max_min(name, time, curve):
+def find_max(name, time, curve):
     if name > 0 and curve.shape[0] > 2:
         loc_max = curve.argmax()
         time_max = time[loc_max]
         return (time_max, 1, curve[loc_max])
 
-    elif name <= 0 and curve.shape[0] > 2:
-        loc_min = curve.argmin()
-        time_min = time[loc_min]
-        return (time_min, -1, curve[loc_min])
 
-def clean_max_min(max_min_time):
-    for index, items in enumerate(max_min_time):
-        try:
-            if index == 0:
-                pass
-            elif -items[1] == max_min_time[index + 1][1] and -items[1] == max_min_time[index - 1][1]:
-                if max_min_time[index + 1][0] - items[0] < 128:
-                    max_min_time.pop(index + 1)
-                    max_min_time.pop(index)
-                elif max_min_time[index - 1][2] < items[2] < max_min_time[index + 1][2] or max_min_time[index - 1][
-                    2] > items[2] > max_min_time[index + 1][2]:
-                    max_min_time.pop(index)
-            elif -items[1] != max_min_time[index + 1][1]:
-                if items[1] == 1:
-                    if items[2] > max_min_time[index + 1][2]:
-                        max_min_time.pop(index + 1)
-                    elif items[2] < max_min_time[index + 1][2]:
-                        max_min_time.pop(index)
-                else:
-                    if items[2] > max_min_time[index + 1][2]:
-                        max_min_time.pop(index)
-                    elif items[2] < max_min_time[index + 1][2]:
-                        max_min_time.pop(index + 1)
-            elif -items[1] != max_min_time[index - 1][1]:
-                if items[1] == 1:
-                    if items[2] > max_min_time[index - 1][2]:
-                        max_min_time.pop(index - 1)
-                    elif items[2] < max_min_time[index - 1][2]:
-                        max_min_time.pop(index)
-                else:
-                    if items[2] > max_min_time[index - 1][2]:
-                        max_min_time.pop(index)
-                    elif items[2] < max_min_time[index - 1][2]:
-                        max_min_time.pop(index - 1)
-            elif items[1] == 1 and items[2] < max_min_time[index + 1][2]:
-                max_min_time.pop(index)
+def clean_max_min(time, curve_values, max_time):
+    end = len(max_time) - 1
+    last_index = 0
+    min_time = np.zeros(len(max_time) + 1)
+    max_drop = []
+
+    for index, mtime in np.ndenumerate(max_time):
+        index = index[0]
+        curve_index = int(np.where(time == mtime)[0])
+        print(index, curve_index, last_index)
+
+        if abs(curve_index - last_index) < 4:
+            if curve_values[curve_index] > curve_values[last_index]:
+                if index >= 1: max_drop.append(index - 1)
             else:
-                print(index, items, max_min_time[index + 1])
-        except IndexError:
-            pass
+                max_drop.append(index)
+        else:
+            min_index = curve_values[last_index:curve_index].argmin() + last_index
+            if (abs(min_index - curve_index) > 1 and abs(min_index - last_index) > 1) or last_index == 0:
+                if (curve_values[last_index] - curve_values[min_index]) / curve_values[last_index] < 0.99:
+                    if (curve_values[curve_index] - curve_values[min_index]) / curve_values[curve_index] < 0.99:
+                        min_time[index] = min_index
+                else:
+                    if curve_values[curve_index] > curve_values[last_index]:
+                        if index >= 1: max_drop.append(index - 1)
+                    else:
+                        max_drop.append(index)
+            else:
+                if curve_values[curve_index] > curve_values[last_index]:
+                    if index >= 1: max_drop.append(index - 1)
+                else:
+                    max_drop.append(index)
 
-    return max_min_time
+        last_index = curve_index
+
+    min_time = min_time[np.nonzero(min_time)]
+    min_time = time[min_time.astype(int)]
+
+    return min_time, max_drop
 
 
 def breath_getter(id):
@@ -95,19 +89,24 @@ def breath_getter(id):
     breath_df['concav'] = breath_df['sm_dF/dTT'].apply(concav)
     grouped = breath_df.groupby('concav')
 
-    max_min_time = []
+    max_time = []
     curve = 'sm_flow'
 
     for name, groups in grouped:
-        result = find_max_min(name, groups['time'].values, groups[curve].values)
+        result = find_max(name, groups['time'].values, groups[curve].values)
         if result is not None:
-            max_min_time.append(result)
+            max_time.append(result)
 
-    max_min_time.sort(key = lambda x: x[0])
+    max_time.sort(key = lambda x: x[0])
+    max_time_df = pd.DataFrame.from_records(max_time, columns = ['time', 'max', 'value'])
 
-    max_min_time = clean_max_min(max_min_time)
-    max_min_time = clean_max_min(max_min_time)
-    max_min_time = clean_max_min(max_min_time)
+    min_time, max_drop = clean_max_min(breath_df['time'].values, breath_df[curve].values, max_time_df['time'].values)
+    max_time_df.drop(max_drop, axis = 0, inplace = True)
+
+    p = ggplot(aes(x = 'time', y = 'sm_flow'), data = breath_df) + geom_line()
+    p = p + geom_vline(xintercept = min_time, color = 'blue')
+    p = p + geom_vline(xintercept = max_time_df['time'], color = 'red')
+    print(p)
 
 
 results = breath_db.find().limit(1000)

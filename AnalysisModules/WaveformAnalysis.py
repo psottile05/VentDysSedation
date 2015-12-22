@@ -50,8 +50,9 @@ def find_max_min(name, time, curve, curve_type):
 
 def clean_max_min(max_min_time):
     for index, items in enumerate(max_min_time):
+        end = len(max_min_time)
         try:
-            if index == 0:
+            if index == 0 or index >= end - 2:
                 pass
             elif -items[1] == max_min_time[index + 1][1] and -items[1] == max_min_time[index - 1][1]:
                 if max_min_time[index + 1][0] - items[0] < 128:
@@ -86,9 +87,23 @@ def clean_max_min(max_min_time):
                 max_min_time.pop(index)
             else:
                 print(index, items, max_min_time[index + 1])
-        except IndexError:
-            pass
+        except IndexError as e:
+            print('IndexError', e, index, end)
 
+        for items in max_min_time:
+            max_count = 0
+            if items[1] == 1:
+                max_count = 1
+                break
+
+        for items in max_min_time:
+            min_count = 0
+            if items[1] == -1:
+                min_count = 1
+                break
+
+        if max_count == 0: print('no max', max_min_time)
+        if min_count == 0: print('no min', max_min_time)
     return max_min_time
 
 
