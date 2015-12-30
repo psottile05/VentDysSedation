@@ -99,7 +99,12 @@ def breath_getter(id):
     max_time_df = pd.DataFrame.from_records(max_time, columns = ['time', 'max', 'value'])
 
     time = breath_df['time'].values
-    min_time, max_drop = clean_max_min(time, breath_df[curve].values, max_time_df['time'].values)
+    try:
+        min_time, max_drop = clean_max_min(time, breath_df[curve].values, max_time_df['time'].values)
+    except:
+        print(time, breath_df[curve].values, max_time_df['time'].values)
+        p = ggplot(aes(x = 'time', y = 'sm_flow'), data = breath_df) + geom_line()
+        print(p)
 
     if min_time[0] == 0:
         min_time = min_time[np.nonzero(min_time)]
