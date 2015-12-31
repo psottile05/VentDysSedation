@@ -248,7 +248,8 @@ def waveform_data_entry(group, breath_df):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
-    mongo_record = WA.analyze_breath(mongo_record)
+    if mongo_record['breath_character']['elapse_time'] > 128:
+        mongo_record = WA.analyze_breath(mongo_record)
 
     return mongo_record
 

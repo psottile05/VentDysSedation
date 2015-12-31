@@ -96,15 +96,14 @@ def breath_getter(id):
             max_time.append(result)
 
     max_time.sort(key = lambda x: x[0])
-    max_time_df = pd.DataFrame.from_records(max_time, columns = ['time', 'max', 'value'])
+    max_time_df = pd.DataFrame.from_records(max_time, columns = ['time', 'max_min', 'value'])
 
     time = breath_df['time'].values
+    values = breath_df[curve].values
     try:
         min_time, max_drop = clean_max_min(time, breath_df[curve].values, max_time_df['time'].values)
     except:
         print(time, breath_df[curve].values, max_time_df['time'].values)
-        p = ggplot(aes(x = 'time', y = 'sm_flow'), data = breath_df) + geom_line()
-        print(p)
 
     if min_time[0] == 0:
         min_time = min_time[np.nonzero(min_time)]
@@ -112,9 +111,21 @@ def breath_getter(id):
     else:
         min_time = min_time[np.nonzero(min_time)]
 
-    min_time = time[min_time.astype(int)]
+    min_time_value = time[min_time.astype(int)]
+    min_marker = np.ones_like(min_time) * -1
+    min_value = values[min_time.astype(int)]
+
+    min_time_df = pd.DataFrame(data = {'time': min_time_value, 'max_min': min_marker, 'value': min_value})
+    min_time_df['curve'] = curve
+    min_time_df.set_index('time', drop = False, inplace = True)
+
     max_drop.pop(0)
     max_time_df.drop(max_drop, axis = 0, inplace = True)
+    max_time_df.set_index('time', drop = False, inplace = True)
+
+    max_min_time_df = pd.concat([max_time_df, min_time_df]).sort()
+
+    print(max_min_time_df)
 
     # p = ggplot(aes(x = 'time', y = 'sm_flow'), data = breath_df) + geom_line()
     # p = p + geom_vline(xintercept = min_time, color = 'blue')
@@ -122,7 +133,7 @@ def breath_getter(id):
     # print(p)
 
 
-results = breath_db.find().limit(1000)
+results = breath_db.find().limit(5)
 for items in list(results):
     print(items['_id'])
     breath_getter(items['_id'])

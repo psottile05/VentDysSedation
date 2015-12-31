@@ -63,7 +63,7 @@ make_waveform_and_breath(files)
 files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
                                       {'type': {'$not': re.compile(r'breath')}},
                                       {'type': {'$not': re.compile(r'other')}},
-                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(1))
+                                      {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(10))
 make_EHR_data(files)
 
 for items in input_log.find({'loaded': 1}, {'type': 10}):

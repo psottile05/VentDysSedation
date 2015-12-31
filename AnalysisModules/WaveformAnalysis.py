@@ -1,9 +1,9 @@
 import pandas as pd
-import json
-import pprint
-import bokeh.charts as charts
+import numpy as np
+import numba
 
 
+# take second derivative
 def second_deriv(raw_df):
     raw_df['sm_dF/dT'] = raw_df['sm_flow'].diff()
     raw_df['sm_dP/dT'] = raw_df['sm_paw'].diff()
@@ -16,6 +16,7 @@ def second_deriv(raw_df):
     return raw_df
 
 
+# label concave up/down
 def concav(x):
     global last_value
     global count
@@ -36,75 +37,50 @@ def concav(x):
 
 
 # max_min_time is a tuple (time, concav direction, value)
-def find_max_min(name, time, curve, curve_type):
+def find_max(name, time, curve, curve_type):
     if name > 0 and curve.shape[0] > 2:
         loc_max = curve.argmax()
         time_max = time[loc_max]
         return time_max, 1, curve[loc_max], curve_type
 
-    elif name <= 0 and curve.shape[0] > 2:
-        loc_min = curve.argmin()
-        time_min = time[loc_min]
-        return time_min, -1, curve[loc_min], curve_type
 
+# clean maxes and find mins
+@numba.jit(nopython = True, nogil = True, cache = True)
+def clean_max_min(time, curve_values, max_time):
+    last_index = 0
+    last_2_index = 0
+    min_time = np.zeros(len(max_time) + 1)
+    max_drop = [0]
 
-def clean_max_min(max_min_time):
-    for index, items in enumerate(max_min_time):
-        end = len(max_min_time)
-        try:
-            if index == 0 or index >= end - 2:
-                pass
-            elif -items[1] == max_min_time[index + 1][1] and -items[1] == max_min_time[index - 1][1]:
-                if max_min_time[index + 1][0] - items[0] < 128:
-                    max_min_time.pop(index + 1)
-                    max_min_time.pop(index)
-                elif max_min_time[index - 1][2] < items[2] < max_min_time[index + 1][2] or max_min_time[index - 1][2] \
-                        > items[2] > max_min_time[index + 1][2]:
-                    max_min_time.pop(index)
-            elif -items[1] != max_min_time[index + 1][1]:
-                if items[1] == 1:
-                    if items[2] > max_min_time[index + 1][2]:
-                        max_min_time.pop(index + 1)
-                    elif items[2] < max_min_time[index + 1][2]:
-                        max_min_time.pop(index)
-                else:
-                    if items[2] > max_min_time[index + 1][2]:
-                        max_min_time.pop(index)
-                    elif items[2] < max_min_time[index + 1][2]:
-                        max_min_time.pop(index + 1)
-            elif -items[1] != max_min_time[index - 1][1]:
-                if items[1] == 1:
-                    if items[2] > max_min_time[index - 1][2]:
-                        max_min_time.pop(index - 1)
-                    elif items[2] < max_min_time[index - 1][2]:
-                        max_min_time.pop(index)
-                else:
-                    if items[2] > max_min_time[index - 1][2]:
-                        max_min_time.pop(index)
-                    elif items[2] < max_min_time[index - 1][2]:
-                        max_min_time.pop(index - 1)
-            elif items[1] == 1 and items[2] < max_min_time[index + 1][2]:
-                max_min_time.pop(index)
+    for index_t, mtime in np.ndenumerate(max_time):
+        index = index_t[0]
+        curve_index = int(np.where(time == mtime)[0][0])
+
+        if abs(curve_index - last_index) < 4 and last_index != 0:
+            if curve_values[curve_index] > curve_values[last_index]:
+                if index >= 1: max_drop.append(index - 1)
             else:
-                print(index, items, max_min_time[index + 1])
-        except IndexError as e:
-            print('IndexError', e, index, end)
+                max_drop.append(index)
+        elif last_index == 0:
+            min_index = curve_values[last_index:curve_index].argmin() + last_index
+            min_time[index] = min_index
+        else:
+            min_index = curve_values[last_index:curve_index].argmin() + last_index
+            if (abs(min_index - curve_index) > 2 and abs(min_index - last_index) > 2):
+                min_time[index] = min_index
+            else:
+                if curve_values[curve_index] > curve_values[last_index]:
+                    if index >= 1: max_drop.append(index - 1)
+                    if len(max_drop) > 2:
+                        if max_drop[-1] == max_drop[-2]:
+                            min_time[index] = curve_values[last_2_index:last_index].argmin() + last_2_index
+                else:
+                    max_drop.append(index)
 
-        for items in max_min_time:
-            max_count = 0
-            if items[1] == 1:
-                max_count = 1
-                break
+        last_2_index = last_index
+        last_index = curve_index
 
-        for items in max_min_time:
-            min_count = 0
-            if items[1] == -1:
-                min_count = 1
-                break
-
-        if max_count == 0: print('no max', max_min_time)
-        if min_count == 0: print('no min', max_min_time)
-    return max_min_time
+    return min_time, max_drop
 
 
 def breath_getter(breath_df):
@@ -125,26 +101,54 @@ def breath_getter(breath_df):
 
         grouped = breath_df.groupby('concav')
 
-        max_min_time = []
-
+        max_time = []
         for name, groups in grouped:
-            result = find_max_min(name, groups['time'].values, groups[curve].values, curve)
+            result = find_max(name, groups['time'].values, groups[curve].values, curve)
             if result is not None:
-                max_min_time.append(result)
+                max_time.append(result)
 
-        max_min_time.sort(key = lambda x: x[0])
+        if len(max_time) < 1:
+            max_time = [(breath_df['time'].iloc[breath_df[curve].idxmax()], 1, breath_df[curve].max(), curve)]
 
-        max_min_time = clean_max_min(max_min_time)
-        max_min_time = clean_max_min(max_min_time)
-        max_min_time = clean_max_min(max_min_time)
+        max_time.sort(key = lambda x: x[0])
+        max_time_df = pd.DataFrame.from_records(max_time, columns = ['time', 'max_min', 'value', 'curve'])
 
-        max_min_temp_df = pd.DataFrame.from_records(max_min_time, columns = ['time', 'max_min', 'value', 'curve'])
-        max_min_df = pd.concat([max_min_temp_df, max_min_df])
+        time = breath_df['time'].values
+        values = breath_df[curve].values
+        try:
+            min_time, max_drop = clean_max_min(time, values, max_time_df['time'].values)
 
+            if min_time[0] == 0:
+                min_time = min_time[np.nonzero(min_time)]
+                min_time = np.insert(min_time, 0, 0)
+            else:
+                min_time = min_time[np.nonzero(min_time)]
+
+            if len(min_time) < 1:
+                print('no min', curve)
+
+            min_time_value = time[min_time.astype(int)]
+            min_marker = np.ones_like(min_time) * -1
+            min_value = values[min_time.astype(int)]
+
+            min_time_df = pd.DataFrame(data = {'time': min_time_value, 'max_min': min_marker, 'value': min_value})
+            min_time_df['curve'] = curve
+            min_time_df.set_index('time', drop = False, inplace = True)
+
+            max_drop.pop(0)
+            max_time_df.drop(max_drop, axis = 0, inplace = True)
+            max_time_df.set_index('time', drop = False, inplace = True)
+
+            max_min_time_df = pd.concat([max_time_df, min_time_df]).sort_index()
+        except Exception as e:
+            print('Error with max/min clean', e)
+            max_min_time_df = pd.DataFrame()
+
+        max_min_df = pd.concat([max_min_df, max_min_time_df])
     return max_min_df
 
 
-def analyze_max_min(max_min_df, raw_df, raw, start_time, end_insp_time, end_time, mongo_record):
+def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time, mongo_record):
     max_min_data_tot = {}
 
     insp_time = end_insp_time - start_time
@@ -162,9 +166,9 @@ def analyze_max_min(max_min_df, raw_df, raw, start_time, end_insp_time, end_time
     grouped = max_min_df.groupby('curve')
 
     for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
-        analysis_df = grouped.get_group(curve).set_index('time')
-
         try:
+            analysis_df = grouped.get_group(curve).set_index('time')
+
             max_df = analysis_df.groupby('max_min').get_group(1)
             min_df = analysis_df.groupby('max_min').get_group(-1)
 
@@ -221,15 +225,7 @@ def analyze_max_min(max_min_df, raw_df, raw, start_time, end_insp_time, end_time
 
         except KeyError as e:
             print('\t', 'Key Error: ', e, mongo_record['_id'], curve)
-            # p = charts.Line(raw, x='time', y=['sm_paw', 'sm_vol', 'sm_flow'], legend='top_left')
-            # charts.output_file('test.html')
-            # charts.show(p)
-
-            # print(max_min_df)
-
-            # input('test')
-            pass
-
+            print('\t', mongo_record['max_min_raw'])
     return max_min_data_tot
 
 
@@ -246,7 +242,7 @@ def analyze_breath(mongo_record):
     mongo_record['max_min_raw'] = max_min_raw
 
     breath_char = mongo_record['breath_character']
-    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], raw_df,
+    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0],
                                    float(breath_char['start_time']),
                                    float(breath_char['end_insp_time']), float(breath_char['end_time']), mongo_record)
     mongo_record['max_min_analysis'] = max_min_data
