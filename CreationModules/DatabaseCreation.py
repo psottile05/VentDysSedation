@@ -261,6 +261,7 @@ def get_waveform_and_breath(file):
     bulk_ops = bulk.BulkOperationBuilder(breath_col, ordered = False)
 
     for name, group in wave_df.groupby('breath', sort = False):
+        bulk_ops.insert(waveform_data_entry(group, breath_df))
         try:
             bulk_ops.insert(waveform_data_entry(group, breath_df))
         except Exception as e:

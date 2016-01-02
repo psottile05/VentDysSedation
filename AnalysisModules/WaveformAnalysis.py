@@ -94,10 +94,13 @@ def breath_getter(breath_df):
 
         if curve == 'sm_flow':
             breath_df['concav'] = breath_df['sm_dF/dTT'].apply(concav)
+            diff = 'sm_dF/dT'
         elif curve == 'sm_paw':
             breath_df['concav'] = breath_df['sm_dP/dTT'].apply(concav)
+            diff = 'sm_dP/dT'
         elif curve == 'sm_vol':
             breath_df['concav'] = breath_df['sm_dV/dTT'].apply(concav)
+            diff = 'sm_dV/dT'
 
         grouped = breath_df.groupby('concav')
 
@@ -148,12 +151,11 @@ def breath_getter(breath_df):
     return max_min_df
 
 
-def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time, mongo_record):
+def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end_time, mongo_record):
     max_min_data_tot = {}
 
     insp_time = end_insp_time - start_time
     exp_time = end_time - end_insp_time
-    elapse_time = end_time - start_time
 
     insp_25_time = start_time + (0.25 * insp_time)
     insp_75_time = start_time + (0.75 * insp_time)
@@ -166,6 +168,24 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time, mon
     grouped = max_min_df.groupby('curve')
 
     for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
+        if curve == 'sm_flow':
+            diff = 'sm_dF/dT'
+        elif curve == 'sm_paw':
+            diff = 'sm_dP/dT'
+        elif curve == 'sm_vol':
+            diff = 'sm_dV/dT'
+
+        max = curve_df[curve].max() * 0.75
+        shoulder = curve_df[(curve_df[diff] < .75) & (curve_df[curve] > max)].head(1)
+        if shoulder.shape[0] != 0:
+            shoulder_time = shoulder['time'].iloc[0]
+            shoulder_amp = shoulder[curve].iloc[0]
+            shoulder_time_percent = shoulder_time / insp_time
+        else:
+            shoulder_time = np.nan
+            shoulder_amp = np.nan
+            shoulder_time_percent = np.nan
+
         try:
             analysis_df = grouped.get_group(curve).set_index('time')
 
@@ -185,7 +205,10 @@ def analyze_max_min(max_min_df, raw_df, start_time, end_insp_time, end_time, mon
                             'n_exp_max_15': int(max_df['value'].loc[end_insp_time:exp_15_time].shape[0]),
                             'n_exp_max_25': int(max_df['value'].loc[end_insp_time:exp_25_time].shape[0]),
                             'n_exp_max_50': int(max_df['value'].loc[exp_25_time:exp_75_time].shape[0]),
-                            'n_exp_max_75': int(max_df['value'].loc[exp_75_time:end_time].shape[0])
+                            'n_exp_max_75': int(max_df['value'].loc[exp_75_time:end_time].shape[0]),
+                            'shoulder_time': shoulder_time,
+                            'shoulder_amp': shoulder_amp,
+                            'shoulder_time_percent': shoulder_time_percent
                             }
             if max_min_data['n_insp_max'] > 0:
                 max_value = float(max_df['value'].loc[start_time:end_insp_time].max())
@@ -242,7 +265,7 @@ def analyze_breath(mongo_record):
     mongo_record['max_min_raw'] = max_min_raw
 
     breath_char = mongo_record['breath_character']
-    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0],
+    max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], raw_df,
                                    float(breath_char['start_time']),
                                    float(breath_char['end_insp_time']), float(breath_char['end_time']), mongo_record)
     mongo_record['max_min_analysis'] = max_min_data
