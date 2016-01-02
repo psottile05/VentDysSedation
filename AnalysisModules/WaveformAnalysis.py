@@ -178,9 +178,12 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
         max = curve_df[curve].max() * 0.75
         shoulder = curve_df[(curve_df[diff] < .75) & (curve_df[curve] > max)].head(1)
         if shoulder.shape[0] != 0:
-            shoulder_time = shoulder['time'].iloc[0]
-            shoulder_amp = shoulder[curve].iloc[0]
-            shoulder_time_percent = shoulder_time / insp_time
+            shoulder_time = int(shoulder['time'].iloc[0])
+            shoulder_amp = float(shoulder[curve].iloc[0])
+            if insp_time != 0:
+                shoulder_time_percent = shoulder_time / insp_time
+            else:
+                shoulder_time_percent = np.nan
         else:
             shoulder_time = np.nan
             shoulder_amp = np.nan
