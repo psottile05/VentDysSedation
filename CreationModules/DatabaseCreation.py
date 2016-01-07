@@ -1,14 +1,15 @@
-__author__ = 'sottilep'
 
-import pprint
 import re
-import json
-from bson.json_util import dumps as jdumps
+
 import numpy as np
 import pandas as pd
 import scipy.signal as sig
 from pymongo import MongoClient, bulk, errors
+
 import AnalysisModules.WaveformAnalysis as WA
+
+__author__ = 'sottilep'
+
 
 client = MongoClient()
 db = client.VentDB
@@ -17,27 +18,26 @@ input_log = db.input_log
 breath_col = db.breath_collection
 
 
-def date_check(df):
+def date_check(df, file):
     if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
         print('Year out of range', df['date_time'].dt.year.min())
+        # TODO note this in input log
 
 
-def dtype_check(df, types):
+def dtype_check(df, types, file):
     for col in df.columns:
         try:
             assert df[col].dtype == types[col]
         except AssertionError:
-            if df[col].dtype != 'object':
-                print('more specific dtype')
-                pass
-            else:
+            if df[col].dtype == 'object':
                 print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
                       + str(df['file'].head(1).values.tolist()[0]))
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
                 print(df[col])
+                # TODO Error Input Log
 
 
-def align_breath(group, breath_df):
+def align_breath(group, breath_df, file):
     breath_setting = breath_df[breath_df.index == group.date_time.min()]
     breath_setting_temp = breath_setting.to_dict(orient = 'records')
 
@@ -52,6 +52,7 @@ def align_breath(group, breath_df):
                           'peak_paw': np.nan, 'mean_paw': np.nan, 'plat_paw': np.nan, 'auto_peep': np.nan,
                           'min_paw': np.nan, 'insp_paw': np.nan, 'rr': np.nan, 't_exp': np.nan, 'compliance': np.nan,
                           't_insp': np.nan, 'high_paw_alarm': np.nan}
+    # TODO ERROR inputlog
 
     return breath_setting
 
@@ -94,8 +95,8 @@ def get_breath_data(file):
                  't_exp': 'float64', 'high_paw_alarm': 'object',
                  'compliance': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
 
-        date_check(df)
-        dtype_check(df, types)
+        date_check(df, file)
+        dtype_check(df, types, file)
 
         df.set_index(['date_time'], inplace = True)
         df = df.resample('1s', fill_method = 'pad', limit = 30)
@@ -103,6 +104,7 @@ def get_breath_data(file):
     else:
         print('missing breath file')
         df = pd.DataFrame()
+        # TODO return error to inputlog
 
     return df
 
@@ -137,13 +139,13 @@ def get_waveform_data(file):
              'sm_flow': 'float64', 'vol_dt': 'float64', 'flow_dt': 'float64', 'paw_dt': 'float64', 'dF/dV': 'float64',
              'dP/dV': 'float64', 'dF/dP': 'float64'}
 
-    date_check(df)
-    dtype_check(df, types)
+    date_check(df, file)
+    dtype_check(df, types, file)
 
     return df
 
 
-def waveform_data_entry(group, breath_df):
+def waveform_data_entry(group, breath_df, file):
     start_time = group.time.min()
     end_time = group.time.max()
     elapse_time = end_time - start_time
@@ -179,7 +181,7 @@ def waveform_data_entry(group, breath_df):
              'norm_dF/dV_exp_max': 'float64', 'dF/dV_insp_max': 'float64', 'dF/dV_exp_max': 'float64',
              'norm_dF/dV_insp_max': 'float64', 'norm_dF/dP_exp_max': 'float64', 'dF/dP_exp_max': 'float64',
              'dP/dV_insp_max': 'float64', 'dF/dP_insp_max': 'float64', 'norm_dF/dP_insp_max': 'float64'}
-    dtype_check(calc_inner_df, types)
+    dtype_check(calc_inner_df, types, file)
 
     breath_dict = {
         'start_time': int(start_time),
@@ -232,7 +234,7 @@ def waveform_data_entry(group, breath_df):
         'dF/dP': group['dF/dP'].values.tolist()
     }
 
-    breath_setting = align_breath(group, breath_df)
+    breath_setting = align_breath(group, breath_df, file)
 
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
@@ -250,6 +252,9 @@ def waveform_data_entry(group, breath_df):
 
     if mongo_record['breath_character']['elapse_time'] > 128:
         mongo_record = WA.analyze_breath(mongo_record)
+    else:
+        pass
+    # TODO note this in input log
 
     return mongo_record
 
@@ -262,16 +267,19 @@ def get_waveform_and_breath(file):
 
     for name, group in wave_df.groupby('breath', sort = False):
         try:
-            bulk_ops.insert(waveform_data_entry(group, breath_df))
+            bulk_ops.insert(waveform_data_entry(group, breath_df, file))
         except Exception as e:
             print('Insert Error', e)
+            # TODO note this in input log
 
     try:
         bulk_ops.execute()
     except errors.BulkWriteError as bwe:
         print('BulkWrite', bwe.details)
+        # TODO note this in input log
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
+        # TODO note this in input log
 
     input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
     input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
