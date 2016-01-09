@@ -22,6 +22,7 @@ def date_check(df, file):
     if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
         print('Year out of range', df['date_time'].dt.year.min())
         # TODO note this in input log
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'date_range_error'}})
 
 
 def dtype_check(df, types, file):
@@ -35,6 +36,8 @@ def dtype_check(df, types, file):
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
                 print(df[col])
                 # TODO Error Input Log
+                input_log.update_one({'_id': file['_id']},
+                                     {'$addToSet': {'errors': 'dtype_error'}, 'info': df['breath_num']})
 
 
 def align_breath(group, breath_df, file):
@@ -45,7 +48,7 @@ def align_breath(group, breath_df, file):
         breath_setting = breath_setting_temp[0]
 
     else:
-        print('align error')
+        print('align error', file)
         breath_setting = {'set_VT': np.nan, 'peak_flow': np.nan, 'ptrigg': np.nan, 'peep': np.nan, 'psupp': np.nan,
                           'fio2': np.nan, 'tigger': np.nan, 'ramp': np.nan, 'vti': np.nan, 'vte': np.nan,
                           'exp_minute_vol': np.nan, 'insp_flow': np.nan, 'leak': np.nan, 'exp_flow': np.nan,
@@ -53,6 +56,8 @@ def align_breath(group, breath_df, file):
                           'min_paw': np.nan, 'insp_paw': np.nan, 'rr': np.nan, 't_exp': np.nan, 'compliance': np.nan,
                           't_insp': np.nan, 'high_paw_alarm': np.nan}
     # TODO ERROR inputlog
+    input_log.update_one({'_id': file['_id']},
+                         {'$addToSet': {'warnings': 'align_warning'}, 'info': breath_df['breath_num']})
 
     return breath_setting
 
@@ -105,6 +110,8 @@ def get_breath_data(file):
         print('missing breath file')
         df = pd.DataFrame()
         # TODO return error to inputlog
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'missing_breath_file_error'}, 'info': file['match_file']})
 
     return df
 
@@ -253,8 +260,8 @@ def waveform_data_entry(group, breath_df, file):
     if mongo_record['breath_character']['elapse_time'] > 128:
         mongo_record = WA.analyze_breath(mongo_record)
     else:
-        pass
-    # TODO note this in input log
+        input_log.update_one({'_id': file['_id']}, {
+            '$addToSet': {'warnings': 'breath_too_short_warning', 'info': mongo_record['breath_num']}})
 
     return mongo_record
 
@@ -271,15 +278,21 @@ def get_waveform_and_breath(file):
         except Exception as e:
             print('Insert Error', e)
             # TODO note this in input log
+            input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': e}})
 
     try:
         bulk_ops.execute()
     except errors.BulkWriteError as bwe:
         print('BulkWrite', bwe.details)
         # TODO note this in input log
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'bulk_write_error', 'info': bwe.details}})
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
         # TODO note this in input log
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': e}})
+    except Exception as e:
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': e}})
 
-    input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
-    input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+    if input_log.find({'_id': file['_id']}, {'_id': 0, 'errors': 1}).count() < 1:
+        input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+        input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
