@@ -23,18 +23,21 @@ breath_col = db.breath_collection
 # input_log.drop()
 # breath_col.drop()
 
-input_log.create_index([('type', pymongo.TEXT)])
-input_log.create_index([('loaded', pymongo.ASCENDING)])
-input_log.create_index([('analyzed', pymongo.ASCENDING)])
-input_log.create_index([('loc', pymongo.GEO2D)], min = -1,
+try:
+    input_log.create_index([('type', pymongo.TEXT)])
+    input_log.create_index([('loaded', pymongo.ASCENDING)])
+    input_log.create_index([('analyzed', pymongo.ASCENDING)])
+    input_log.create_index([('loc', pymongo.GEO2D)], min = -1,
                        max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
-breath_col.create_index([('patient_ID', pymongo.ASCENDING)])
-breath_col.create_index([('file', pymongo.TEXT)])
-breath_col.create_index([('breath_num', pymongo.ASCENDING)])
-breath_col.create_index([('date_time', pymongo.ASCENDING)])
-breath_col.create_index([('loc', pymongo.GEO2D)], min = -1,
-                        max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
+    breath_col.create_index([('patient_ID', pymongo.ASCENDING)])
+    breath_col.create_index([('file', pymongo.TEXT)])
+    breath_col.create_index([('breath_num', pymongo.ASCENDING)])
+    breath_col.create_index([('date_time', pymongo.ASCENDING)])
+    breath_col.create_index([('loc', pymongo.GEO2D)], min = -1,
+                            max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
+except pymongo.errors.OperationFailure:
+    pass
 
 # Update List of RawDataFiles and Match Breath/Waveform Files
 FS.file_search()

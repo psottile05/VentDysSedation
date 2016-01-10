@@ -293,6 +293,6 @@ def get_waveform_and_breath(file):
     except Exception as e:
         input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': e}})
 
-    if input_log.find({'_id': file['_id']}, {'_id': 0, 'errors': 1}).count() < 1:
+    if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
         input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
