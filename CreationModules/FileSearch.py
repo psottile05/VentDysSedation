@@ -64,7 +64,9 @@ def file_search():
                                       'loc': [start_time.timestamp(), p_id],
                                       'loaded': 0, 'crossed': 0})
             except errors.DuplicateKeyError:
-                print('Dup Keys', file.name)
+                pass
+            except Exception as e:
+                print('File Error: ', e)
 
 
 def file_match():

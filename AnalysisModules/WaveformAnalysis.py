@@ -1,7 +1,12 @@
 import pandas as pd
 import numpy as np
 import numba
+from pymongo import MongoClient
 
+client = MongoClient()
+db = client.VentDB
+
+input_log = db.input_log
 
 # take second derivative
 def second_deriv(raw_df):
@@ -17,7 +22,7 @@ def second_deriv(raw_df):
 
 
 # label concave up/down
-def concav(x):
+def concav(x, mongo_record):
     global last_value
     global count
 
@@ -32,6 +37,9 @@ def concav(x):
             value = -count
     except TypeError:
         print(x)
+        input_log.update_one({'_id': mongo_record['_id']},
+                             {'$addToSet': {'errors': 'concave_error', 'concave_error': mongo_record['breath_num']}})
+
 
     return value
 
@@ -83,7 +91,7 @@ def clean_max_min(time, curve_values, max_time):
     return min_time, max_drop
 
 
-def breath_getter(breath_df):
+def breath_getter(breath_df, mongo_record):
     max_min_df = pd.DataFrame()
     for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
         global last_value
@@ -146,6 +154,8 @@ def breath_getter(breath_df):
         except Exception as e:
             print('Error with max/min clean', e)
             max_min_time_df = pd.DataFrame()
+            input_log.update_one({'_id': mongo_record['_id']}, {
+                '$addToSet': {'errors': 'max_min_error', 'max_min_error': mongo_record['breath_num']}})
 
         max_min_df = pd.concat([max_min_df, max_min_time_df])
     return max_min_df
@@ -252,6 +262,11 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
         except KeyError as e:
             print('\t', 'Key Error: ', e, mongo_record['_id'], curve)
             print('\t', mongo_record['max_min_raw'])
+            input_log.update_one({'_id': mongo_record['_id']}, {
+                '$addToSet': {'errors': 'WA_analysis_key_error', 'WA_analysis_key_error': mongo_record['breath_num']}})
+        except Exception as e:
+            input_log.update_one({'_id': mongo_record['_id']}, {
+                '$addToSet': {'errors': 'WA_analysis_error', 'WA_analysis' + e + '_error': mongo_record['breath_num']}})
     return max_min_data_tot
 
 

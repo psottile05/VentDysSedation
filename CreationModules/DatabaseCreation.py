@@ -21,8 +21,8 @@ breath_col = db.breath_collection
 def date_check(df, file):
     if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
         print('Year out of range', df['date_time'].dt.year.min())
-        # TODO note this in input log
-        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'date_range_error', 'info': file['_id']}})
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'date_range_error', 'date_range_error': file['_id']}})
 
 
 def dtype_check(df, types, file):
@@ -35,9 +35,8 @@ def dtype_check(df, types, file):
                       + str(df['file'].head(1).values.tolist()[0]))
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
                 print(df[col])
-                # TODO Error Input Log
                 input_log.update_one({'_id': file['_id']},
-                                     {'$addToSet': {'errors': 'dtype_error', 'info': df['breath_num']}})
+                                     {'$addToSet': {'errors': 'dtype_error', 'dtype_error': df['breath_num']}})
 
 
 def align_breath(group, breath_df, file):
@@ -55,9 +54,9 @@ def align_breath(group, breath_df, file):
                           'peak_paw': np.nan, 'mean_paw': np.nan, 'plat_paw': np.nan, 'auto_peep': np.nan,
                           'min_paw': np.nan, 'insp_paw': np.nan, 'rr': np.nan, 't_exp': np.nan, 'compliance': np.nan,
                           't_insp': np.nan, 'high_paw_alarm': np.nan}
-        # TODO ERROR inputlog
         input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'warnings': 'align_warning', 'info': int(group['breath'].head(1))}})
+                             {'$addToSet': {'warnings': 'align_warning',
+                                            'align_warning': int(group['breath'].head(1))}})
 
     return breath_setting
 
@@ -109,9 +108,9 @@ def get_breath_data(file):
     else:
         print('missing breath file')
         df = pd.DataFrame()
-        # TODO return error to inputlog
         input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'errors': 'missing_breath_file_error', 'info': file['match_file']}})
+                             {'$addToSet': {'errors': 'missing_breath_file_error',
+                                            'missing_breath_file': file['match_file']}})
 
     return df
 
@@ -277,21 +276,21 @@ def get_waveform_and_breath(file):
             bulk_ops.insert(waveform_data_entry(group, breath_df, file))
         except Exception as e:
             print('Insert Error', e)
-            # TODO note this in input log
-            input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': str(e)}})
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'insert_error', 'insert_error': str(e)}})
 
     try:
         bulk_ops.execute()
     except errors.BulkWriteError as bwe:
         print('BulkWrite', bwe.details)
-        # TODO note this in input log
-        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'bulk_write_error', 'info': bwe.details}})
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': bwe.details}})
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
-        # TODO note this in input log
-        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': e}})
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': e}})
     except Exception as e:
-        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'info': e}})
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'other_error': e}})
 
     if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
