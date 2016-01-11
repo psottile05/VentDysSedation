@@ -288,9 +288,9 @@ def get_waveform_and_breath(file):
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
         input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': e}})
+                             {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': str(e)}})
     except Exception as e:
-        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'other_error': e}})
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'other_error': str(e)}})
 
     if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})

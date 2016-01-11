@@ -23,7 +23,7 @@ def second_deriv(raw_df):
 
 
 # label concave up/down
-def concav(x, mongo_record):
+def concav(x, mongo_record = {}):
     global last_value
     global count
 
@@ -104,13 +104,13 @@ def breath_getter(breath_df, mongo_record):
         count = 0
 
         if curve == 'sm_flow':
-            breath_df['concav'] = breath_df['sm_dF/dTT'].apply(concav)
+            breath_df['concav'] = breath_df['sm_dF/dTT'].apply(concav, mongo_record = mongo_record)
             diff = 'sm_dF/dT'
         elif curve == 'sm_paw':
-            breath_df['concav'] = breath_df['sm_dP/dTT'].apply(concav)
+            breath_df['concav'] = breath_df['sm_dP/dTT'].apply(concav, mongo_record = mongo_record)
             diff = 'sm_dP/dT'
         elif curve == 'sm_vol':
-            breath_df['concav'] = breath_df['sm_dV/dTT'].apply(concav)
+            breath_df['concav'] = breath_df['sm_dV/dTT'].apply(concav, mongo_record = mongo_record)
             diff = 'sm_dV/dT'
 
         grouped = breath_df.groupby('concav')
