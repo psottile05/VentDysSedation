@@ -1,12 +1,13 @@
-import pandas as pd
-import numpy as np
 import numba
+import numpy as np
+import pandas as pd
 from pymongo import MongoClient
 
 client = MongoClient()
 db = client.VentDB
 
 input_log = db.input_log
+
 
 # take second derivative
 def second_deriv(raw_df):
@@ -37,9 +38,9 @@ def concav(x, mongo_record):
             value = -count
     except TypeError:
         print(x)
+        value = 0
         input_log.update_one({'_id': mongo_record['_id']},
                              {'$addToSet': {'errors': 'concave_error', 'concave_error': mongo_record['breath_num']}})
-
 
     return value
 
@@ -66,7 +67,8 @@ def clean_max_min(time, curve_values, max_time):
 
         if abs(curve_index - last_index) < 4 and last_index != 0:
             if curve_values[curve_index] > curve_values[last_index]:
-                if index >= 1: max_drop.append(index - 1)
+                if index >= 1:
+                    max_drop.append(index - 1)
             else:
                 max_drop.append(index)
         elif last_index == 0:
@@ -74,11 +76,12 @@ def clean_max_min(time, curve_values, max_time):
             min_time[index] = min_index
         else:
             min_index = curve_values[last_index:curve_index].argmin() + last_index
-            if (abs(min_index - curve_index) > 2 and abs(min_index - last_index) > 2):
+            if abs(min_index - curve_index) > 2 and abs(min_index - last_index) > 2:
                 min_time[index] = min_index
             else:
                 if curve_values[curve_index] > curve_values[last_index]:
-                    if index >= 1: max_drop.append(index - 1)
+                    if index >= 1:
+                        max_drop.append(index - 1)
                     if len(max_drop) > 2:
                         if max_drop[-1] == max_drop[-2]:
                             min_time[index] = curve_values[last_2_index:last_index].argmin() + last_2_index
@@ -184,6 +187,8 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
             diff = 'sm_dP/dT'
         elif curve == 'sm_vol':
             diff = 'sm_dV/dT'
+        else:
+            diff = 'sm_dF/dT'
 
         max = curve_df[curve].max() * 0.75
         shoulder = curve_df[(curve_df[diff] < .75) & (curve_df[curve] > max)].head(1)
@@ -266,7 +271,8 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
                 '$addToSet': {'errors': 'WA_analysis_key_error', 'WA_analysis_key_error': mongo_record['breath_num']}})
         except Exception as e:
             input_log.update_one({'_id': mongo_record['_id']}, {
-                '$addToSet': {'errors': 'WA_analysis_error', 'WA_analysis' + e + '_error': mongo_record['breath_num']}})
+                '$addToSet': {'errors': 'WA_analysis_error',
+                              'WA_analysis' + str(e) + '_error': mongo_record['breath_num']}})
     return max_min_data_tot
 
 
@@ -276,7 +282,7 @@ def analyze_breath(mongo_record):
     breath_raw = raw_df.astype(float).to_dict(orient = 'list')
     mongo_record['breath_raw'] = breath_raw
 
-    max_min_df = breath_getter(raw_df)
+    max_min_df = breath_getter(raw_df, mongo_record)
     max_min_raw = max_min_df[['time', 'value', 'max_min']].astype(float).to_dict(orient = 'list')
     curves = max_min_df['curve'].values.tolist()
     max_min_raw['curve'] = curves
