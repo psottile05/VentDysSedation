@@ -1,4 +1,4 @@
-__author__ = 'sottilep'
+
 
 import datetime
 import re
@@ -9,7 +9,7 @@ from pymongo import MongoClient
 
 from CreationModules import FileSearch as FS
 
-# from AnalysisModules import Visualization as viz
+__author__ = 'sottilep'
 
 ipclient = Client()
 print(ipclient.ids)
@@ -28,7 +28,7 @@ try:
     input_log.create_index([('loaded', pymongo.ASCENDING)])
     input_log.create_index([('analyzed', pymongo.ASCENDING)])
     input_log.create_index([('loc', pymongo.GEO2D)], min = -1,
-                       max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
+                           max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
     breath_col.create_index([('patient_ID', pymongo.ASCENDING)])
     breath_col.create_index([('file', pymongo.TEXT)])
