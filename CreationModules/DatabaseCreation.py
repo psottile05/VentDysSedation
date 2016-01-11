@@ -259,7 +259,8 @@ def waveform_data_entry(group, breath_df, file):
         mongo_record = WA.analyze_breath(mongo_record)
     else:
         input_log.update_one({'_id': file['_id']}, {
-            '$addToSet': {'warnings': 'breath_too_short_warning', 'info': mongo_record['breath_num']}})
+            '$addToSet': {'warnings': 'breath_too_short_warning',
+                          'breath_too_short_warning': mongo_record['breath_num']}})
 
     return mongo_record
 
