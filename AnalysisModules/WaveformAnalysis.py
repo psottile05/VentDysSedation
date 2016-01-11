@@ -23,7 +23,7 @@ def second_deriv(raw_df):
 
 
 # label concave up/down
-def concav(x, mongo_record = {}):
+def concav(x, mongo_record):
     global last_value
     global count
 
