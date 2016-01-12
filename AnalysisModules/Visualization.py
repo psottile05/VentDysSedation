@@ -7,6 +7,7 @@ db = client.VentDB
 breath_db = db.breath_collection
 
 plot.offline.init_notebook_mode()
+print(plot.__version__)
 
 
 def get_breaths(limits):
