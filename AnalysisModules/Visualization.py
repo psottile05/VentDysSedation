@@ -12,7 +12,7 @@ print(plot.__version__)
 
 def get_breaths(limits):
     results = breath_db.find().limit(limits)
-    return list(results)
+    return results
 
 
 def breath_viz(id):
@@ -21,6 +21,7 @@ def breath_viz(id):
     breath_end = breath['breath_raw']['time'][-1]
 
     try:
+
         pre_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
                                          {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     except IndexError:
@@ -46,13 +47,16 @@ def breath_viz(id):
     return df
 
 
-def make_plot(df, curve):
-    trace1 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_paw'])
-    trace2 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_flow'])
-    trace3 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_vol'])
-    data = [trace1, trace2, trace3]
+def make_plot(df):
+    trace1 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_paw'], name = 'paw')
+    trace2 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_flow'], name = 'flow')
+    trace3 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_vol'], name = 'vol')
 
     fig = plot.tools.make_subplots(rows = 3, cols = 1)
-    fig.append_trace(data)
+    fig.append_trace(trace1, 1, 1)
+    fig.append_trace(trace2, 2, 1)
+    fig.append_trace(trace3, 3, 1)
+
+    fig['layout'].update(height = 800)
 
     return plot.plotly.iplot(fig)
