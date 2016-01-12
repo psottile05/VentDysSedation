@@ -1,14 +1,17 @@
-import numpy as np
 import pandas as pd
-from ggplot import *
+import plotly as plot
 from pymongo import MongoClient
-import plotly as plt
-
-plt.offline.init_notebook_mode()
 
 client = MongoClient()
 db = client.VentDB
 breath_db = db.breath_collection
+
+plot.offline.init_notebook_mode()
+
+
+def get_breaths(limits):
+    results = breath_db.find().limit(limits)
+    return list(results)
 
 
 def breath_viz(id):
@@ -39,24 +42,11 @@ def breath_viz(id):
     df = pd.concat([pd.DataFrame(pre_breath['breath_raw']), pd.DataFrame(breath['breath_raw']),
                     pd.DataFrame(post_breath['breath_raw'])])
 
-    '''p = ggplot(aes(x = 'time', y = 'sm_flow'), data = df) + geom_line()
-    p = p + geom_vline(xintercept = [breath_start, breath_end], color = 'blue')
-    print(p)'''
-
-    print(plt.__version__)
-
-    plt.offline.iplot({
-        "data": [{
-            "x": [1, 2, 3],
-            "y": [4, 2, 5]
-        }],
-        "layout": {
-            "title": "hello world"
-        }
-    })
+    return df
 
 
-results = breath_db.find().limit(2)
-for items in list(results):
-    print(items['_id'])
-    breath_viz(items['_id'])
+def make_plot(df, curve):
+    trace = plot.graph_objs.Scatter(x = df['time'], y = df[curve])
+    data = [trace]
+    plot.plotly.iplot(data)
+    return
