@@ -1,14 +1,14 @@
-__author__ = 'sottilep'
-
-import json
 import re
 
 import numpy as np
 import pandas as pd
 import scipy.signal as sig
-from pymongo import MongoClient
+from pymongo import MongoClient, bulk, errors
 
-# import AnalysisModules.WaveformAnalysis as WA
+import AnalysisModules.WaveformAnalysis as WA
+
+__author__ = 'sottilep'
+
 
 client = MongoClient()
 db = client.VentDB
@@ -17,34 +17,45 @@ input_log = db.input_log
 breath_col = db.breath_collection
 
 
-def date_check(df):
+def date_check(df, file):
     if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
         print('Year out of range', df['date_time'].dt.year.min())
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'date_range_error', 'date_range_error': file['_id']}})
 
 
-def dtype_check(df, types):
+def dtype_check(df, types, file):
     for col in df.columns:
         try:
             assert df[col].dtype == types[col]
         except AssertionError:
-            if df[col].dtype != 'object':
-                print('more specific dtype')
-                pass
-            else:
+            if df[col].dtype == 'object':
                 print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
                       + str(df['file'].head(1).values.tolist()[0]))
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
                 print(df[col])
+                input_log.update_one({'_id': file['_id']},
+                                     {'$addToSet': {'errors': 'dtype_error', 'dtype_error': df['breath_num']}})
 
 
-def align_breath(group, breath_df):
+def align_breath(group, breath_df, file):
     breath_setting = breath_df[breath_df.index == group.date_time.min()]
     breath_setting_temp = breath_setting.to_dict(orient = 'records')
 
     if len(breath_setting_temp) > 0:
         breath_setting = breath_setting_temp[0]
+
     else:
-        breath_setting = {}
+        print('align error', file)
+        breath_setting = {'set_VT': np.nan, 'peak_flow': np.nan, 'ptrigg': np.nan, 'peep': np.nan, 'psupp': np.nan,
+                          'fio2': np.nan, 'tigger': np.nan, 'ramp': np.nan, 'vti': np.nan, 'vte': np.nan,
+                          'exp_minute_vol': np.nan, 'insp_flow': np.nan, 'leak': np.nan, 'exp_flow': np.nan,
+                          'peak_paw': np.nan, 'mean_paw': np.nan, 'plat_paw': np.nan, 'auto_peep': np.nan,
+                          'min_paw': np.nan, 'insp_paw': np.nan, 'rr': np.nan, 't_exp': np.nan, 'compliance': np.nan,
+                          't_insp': np.nan, 'high_paw_alarm': np.nan}
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'warnings': 'align_warning',
+                                            'align_warning': int(group['breath'].head(1))}})
 
     return breath_setting
 
@@ -60,14 +71,14 @@ def get_breath_data(file):
                                     'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
                                     'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
                                     'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
-                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)'])
+                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)', '!High Pressure'])
         df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
                              'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
                              'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
                              'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
                              'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
                              'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
-                             'P mean (cmH2O)': 'mean_paw',
+                             'P mean (cmH2O)': 'mean_paw', '!High Pressure': 'high_paw_alarm',
                              'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
                              'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
                              'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
@@ -84,11 +95,11 @@ def get_breath_data(file):
                  'leak': 'float64',
                  'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
                  'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
-                 't_exp': 'float64',
+                 't_exp': 'float64', 'high_paw_alarm': 'object',
                  'compliance': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
 
-        date_check(df)
-        dtype_check(df, types)
+        date_check(df, file)
+        dtype_check(df, types, file)
 
         df.set_index(['date_time'], inplace = True)
         df = df.resample('1s', fill_method = 'pad', limit = 30)
@@ -96,6 +107,9 @@ def get_breath_data(file):
     else:
         print('missing breath file')
         df = pd.DataFrame()
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'missing_breath_file_error',
+                                            'missing_breath_file': file['match_file']}})
 
     return df
 
@@ -130,13 +144,13 @@ def get_waveform_data(file):
              'sm_flow': 'float64', 'vol_dt': 'float64', 'flow_dt': 'float64', 'paw_dt': 'float64', 'dF/dV': 'float64',
              'dP/dV': 'float64', 'dF/dP': 'float64'}
 
-    date_check(df)
-    dtype_check(df, types)
+    date_check(df, file)
+    dtype_check(df, types, file)
 
     return df
 
 
-def waveform_data_entry(group, breath_df):
+def waveform_data_entry(group, breath_df, file):
     start_time = group.time.min()
     end_time = group.time.max()
     elapse_time = end_time - start_time
@@ -172,31 +186,31 @@ def waveform_data_entry(group, breath_df):
              'norm_dF/dV_exp_max': 'float64', 'dF/dV_insp_max': 'float64', 'dF/dV_exp_max': 'float64',
              'norm_dF/dV_insp_max': 'float64', 'norm_dF/dP_exp_max': 'float64', 'dF/dP_exp_max': 'float64',
              'dP/dV_insp_max': 'float64', 'dF/dP_insp_max': 'float64', 'norm_dF/dP_insp_max': 'float64'}
-    dtype_check(calc_inner_df, types)
+    dtype_check(calc_inner_df, types, file)
 
     breath_dict = {
-        'start_time': start_time,
-        'end_insp_time': end_insp_time,
-        'end_time': end_time,
-        'insp_time': end_insp_time - start_time,
-        'exp_time': end_time - end_insp_time,
-        'elapse_time': end_time - start_time,
+        'start_time': int(start_time),
+        'end_insp_time': int(end_insp_time),
+        'end_time': int(end_time),
+        'insp_time': int(end_insp_time - start_time),
+        'exp_time': int(end_time - end_insp_time),
+        'elapse_time': int(end_time - start_time),
 
-        'peak_paw': group.paw.max(),
-        'mean_insp_paw': insp_df.paw.mean(),
-        'end_insp_paw': end_insp_df.paw.max(),
-        'mean_exp_paw': exp_df.paw.mean(),
-        'min_paw': group.paw.min(),
+        'peak_paw': float(group.paw.max()),
+        'mean_insp_paw': float(insp_df.paw.mean()),
+        'end_insp_paw': float(end_insp_df.paw.max()),
+        'mean_exp_paw': float(exp_df.paw.mean()),
+        'min_paw': float(group.paw.min()),
 
-        'peak_flow': group.flow.max(),
-        'mean_insp_flow': insp_df.flow.mean(),
-        'end_insp_flow': end_insp_df.flow.min(),
-        'mean_exp_flow': exp_df.flow.mean(),
-        'min_flow': group.flow.min(),
+        'peak_flow': float(group.flow.max()),
+        'mean_insp_flow': float(insp_df.flow.mean()),
+        'end_insp_flow': float(end_insp_df.flow.min()),
+        'mean_exp_flow': float(exp_df.flow.mean()),
+        'min_flow': float(group.flow.min()),
 
-        'peak_vol': group.vol.max(),
-        'end_insp_vol': end_insp_df.vol.min(),
-        'min_vol': group.vol.min(),
+        'peak_vol': float(group.vol.max()),
+        'end_insp_vol': float(end_insp_df.vol.min()),
+        'min_vol': float(group.vol.min()),
 
         'n_dF/dV_insp_max': int(calc_inner_df[calc_inner_df['dF/dV_insp_max'] > 0]['dF/dV_insp_max'].count()),
         'n_dP/dV_insp_max': int(calc_inner_df[calc_inner_df['dP/dV_insp_max'] > 0]['dP/dV_insp_max'].count()),
@@ -208,28 +222,31 @@ def waveform_data_entry(group, breath_df):
     }
 
     raw_dict = {
-        'time': group.time.values,
-        'breath': group.breath.values,
-        'status': group.status.values,
-        'paw': group.paw.values,
-        'flow': group.flow.values,
-        'vol': group.vol.values,
-        'sm_paw': group.sm_paw.values,
-        'sm_flow': group.sm_flow.values,
-        'sm_vol': group.sm_vol.values,
-        'dF/dV': group['dF/dV'].values,
-        'dP/dV': group['dP/dV'].values,
-        'dF/dP': group['dF/dP'].values
+        'time': group.time.values.tolist(),
+        'breath': group.breath.values.tolist(),
+        'status': group.status.values.tolist(),
+        'paw': group.paw.values.tolist(),
+        'flow': group.flow.values.tolist(),
+        'vol': group.vol.values.tolist(),
+        'sm_paw': group.sm_paw.values.tolist(),
+        'sm_flow': group.sm_flow.values.tolist(),
+        'sm_vol': group.sm_vol.values.tolist(),
+        'dF/dT': group['flow_dt'].values.tolist(),
+        'dP/dT': group['paw_dt'].values.tolist(),
+        'dV/dT': group['vol_dt'].values.tolist(),
+        'dF/dV': group['dF/dV'].values.tolist(),
+        'dP/dV': group['dP/dV'].values.tolist(),
+        'dF/dP': group['dF/dP'].values.tolist()
     }
 
-    breath_setting = align_breath(group, breath_df)
+    breath_setting = align_breath(group, breath_df, file)
 
     mongo_record = {
         '_id': group.file.head(1).values.tolist()[0] + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
                + '/' + str(start_time),
-        'patient_ID': int(group.patient_ID.head(1)),
+        'patient_id': int(group.patient_ID.head(1)),
         'file': group.file.head(1).values[0],
-        'breath_num': group.breath.min(),
+        'breath_num': int(group.breath.min()),
         'date_time': group.date_time.min().timestamp(),
         'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
         'breath_settings': breath_setting,
@@ -238,7 +255,12 @@ def waveform_data_entry(group, breath_df):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
-    #mongo_record = WA.analyze_breath(mongo_record)
+    if mongo_record['breath_character']['elapse_time'] > 128:
+        mongo_record = WA.analyze_breath(mongo_record)
+    else:
+        input_log.update_one({'_id': file['_id']}, {
+            '$addToSet': {'warnings': 'breath_too_short_warning',
+                          'breath_too_short_warning': mongo_record['breath_num']}})
 
     return mongo_record
 
@@ -247,10 +269,29 @@ def get_waveform_and_breath(file):
     breath_df = get_breath_data(file)
     wave_df = get_waveform_data(file)
 
-    breath_col.insert_many(
-        json.loads(
-            wave_df.groupby('breath', sort = False).apply(waveform_data_entry,
-                                                          breath_df = breath_df).to_json(orient = 'records')),
-        ordered = False)
-    input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
-    input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+    bulk_ops = bulk.BulkOperationBuilder(breath_col, ordered = False)
+
+    for name, group in wave_df.groupby('breath', sort = False):
+        try:
+            bulk_ops.insert(waveform_data_entry(group, breath_df, file))
+        except Exception as e:
+            print('Insert Error', e)
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'insert_error', 'insert_error': str(e)}})
+
+    try:
+        bulk_ops.execute()
+    except errors.BulkWriteError as bwe:
+        print('BulkWrite', bwe.details)
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': bwe.details}})
+    except errors.InvalidDocument as e:
+        print('InvalidDoc', e)
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': str(e)}})
+    except Exception as e:
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'other_error': str(e)}})
+
+    if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
+        input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+        input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})

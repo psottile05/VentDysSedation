@@ -189,6 +189,7 @@ def data_analysis(fileName):
     temp_df['DateTime'] = pd.to_datetime(temp_df['DateTime'], infer_datetime_format = True)
     temp_df.set_index('DateTime', inplace = True, drop = True)
     temp_df.dropna(inplace = True, axis = 0, how = 'all')
+    temp_df = pd.to_numeric(temp_df, errors = 'ignore')
 
     cols = temp_df.columns
     for col in cols:
@@ -273,6 +274,7 @@ def lab_analysis(fileName):
 
     df = pd.DataFrame.from_records([items.make_tuple() for items in labCollection], columns = ['date_time', 'group',
                                                                                                'lab', 'value'])
+    df['value'] = pd.to_numeric(df['value'], errors = 'coerce')
     df['date_time'] = pd.to_datetime(df['date_time'], infer_datetime_format = True, errors = 'coerce')
 
     return df
@@ -287,6 +289,7 @@ def load_EHR_data(path, patients):
         except Exception as e:
             error = {path, e}
             print(error)
+            tot_df = pd.DataFrame()
 
         tot_df.reset_index(inplace = True)
         tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
