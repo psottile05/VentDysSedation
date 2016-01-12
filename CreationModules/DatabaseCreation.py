@@ -1,11 +1,14 @@
 __author__ = 'sottilep'
 
-from pymongo import MongoClient
+import json
+import re
+
 import numpy as np
 import pandas as pd
-import re
-import numba
 import scipy.signal as sig
+from pymongo import MongoClient
+
+# import AnalysisModules.WaveformAnalysis as WA
 
 client = MongoClient()
 db = client.VentDB
@@ -133,7 +136,6 @@ def get_waveform_data(file):
     return df
 
 
-@profile
 def waveform_data_entry(group, breath_df):
     start_time = group.time.min()
     end_time = group.time.max()
@@ -236,4 +238,19 @@ def waveform_data_entry(group, breath_df):
         'breath_derivative': calc_inner_df.to_dict(orient = 'list')
     }
 
+    #mongo_record = WA.analyze_breath(mongo_record)
+
     return mongo_record
+
+
+def get_waveform_and_breath(file):
+    breath_df = get_breath_data(file)
+    wave_df = get_waveform_data(file)
+
+    breath_col.insert_many(
+        json.loads(
+            wave_df.groupby('breath', sort = False).apply(waveform_data_entry,
+                                                          breath_df = breath_df).to_json(orient = 'records')),
+        ordered = False)
+    input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+    input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})

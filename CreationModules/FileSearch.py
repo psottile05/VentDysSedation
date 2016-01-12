@@ -1,10 +1,10 @@
 __author__ = 'sottilep'
 
-from pathlib import Path
-from pymongo import MongoClient, errors
-import pymongo
-import re
 import datetime
+import re
+from pathlib import Path
+
+from pymongo import MongoClient, errors
 
 client = MongoClient()
 db = client.VentDB
@@ -33,34 +33,35 @@ def file_search():
         for file in files:
             if 'Breath' in file.name or 'breath' in file.name:
                 file_type = "breath"
-            if 'Waveform' in file.name or 'waveform' in file.name:
+            elif 'Waveform' in file.name or 'waveform' in file.name:
                 file_type = "waveform"
-            if 'RT' in file.name or 'rt' in file.name:
+            elif ('RT' in file.name or 'rt' in file.name) and ('edit' not in file.name):
                 file_type = "rt"
-            if 'RN' in file.name or 'rn' in file.name:
-                file_type = "rt"
-            if 'Lab' in file.name or 'lab' in file.name:
+            elif ('RN' in file.name or 'rn' in file.name) and ('edit' not in file.name):
+                file_type = "rn"
+            elif ('Lab' in file.name or 'lab' in file.name) and ('edit' not in file.name):
                 file_type = "lab"
+            else:
+                file_type = 'other'
 
             start_time = re.search(r'(\d\d-\d\d-\d\d-\d\d-\d\d)|(\d\d\d-\d)', file.name)
 
             if isinstance(start_time, type(None)):
-                start_time = -1
+                start_time = datetime.datetime(1970, 1, 1)
 
             else:
                 try:
-                    start_time = datetime.datetime.strptime(start_time.group(), '%y-%m-%d-%H-%M').timestamp()
+                    start_time = datetime.datetime.strptime(start_time.group(), '%y-%m-%d-%H-%M')
                 except ValueError:
-                    start_time = re.sub('-', '.', start_time.group())
+                    print('ValueError', file.name)
 
             p_id = float(re.search(r'(?<=P)[0-9]*', file.as_posix()).group(0))
-
             try:
                 input_log.insert_one({'_id': file.as_posix(),
                                       'patient_id': p_id,
                                       'type': file_type,
                                       'start_time': start_time,
-                                      'loc': [start_time, p_id],
+                                      'loc': [start_time.timestamp(), p_id],
                                       'loaded': 0, 'crossed': 0})
             except errors.DuplicateKeyError:
                 print('Dup Keys', file.name)
