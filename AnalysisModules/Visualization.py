@@ -49,5 +49,4 @@ def breath_viz(id):
 def make_plot(df, curve):
     trace = plot.graph_objs.Scatter(x = df['time'], y = df[curve])
     data = [trace]
-    plot.plotly.iplot(data)
-    return
+    return plot.plotly.iplot(data)
