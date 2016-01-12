@@ -1,13 +1,11 @@
 import pandas as pd
-import plotly as plot
 from pymongo import MongoClient
+from bokeh.plotting import figure, output_notebook, show
+
 
 client = MongoClient()
 db = client.VentDB
 breath_db = db.breath_collection
-
-plot.offline.init_notebook_mode()
-print(plot.__version__)
 
 
 def get_breaths(limits):
@@ -48,15 +46,9 @@ def breath_viz(id):
 
 
 def make_plot(df):
-    trace1 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_paw'], name = 'paw')
-    trace2 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_flow'], name = 'flow')
-    trace3 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_vol'], name = 'vol')
+    output_notebook()
 
-    fig = plot.tools.make_subplots(rows = 3, cols = 1)
-    fig.append_trace(trace1, 1, 1)
-    fig.append_trace(trace2, 2, 1)
-    fig.append_trace(trace3, 3, 1)
+    p = figure(plot_height = 800)
+    p.line([1, 2, 3], [1, 2, 3])
 
-    fig['layout'].update(height = 800)
-
-    return plot.plotly.iplot(fig)
+    return p
