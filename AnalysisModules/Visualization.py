@@ -47,6 +47,9 @@ def breath_viz(id):
 
 
 def make_plot(df, curve):
-    trace = plot.graph_objs.Scatter(x = df['time'], y = df[curve])
-    data = [trace]
+    trace1 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_paw'])
+    trace2 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_flow'])
+    trace3 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_vol'])
+
+    data = [trace1, trace2, trace3]
     return plot.plotly.iplot(data)
