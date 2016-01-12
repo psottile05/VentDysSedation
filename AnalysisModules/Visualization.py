@@ -50,6 +50,9 @@ def make_plot(df, curve):
     trace1 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_paw'])
     trace2 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_flow'])
     trace3 = plot.graph_objs.Scatter(x = df['time'], y = df['sm_vol'])
-
     data = [trace1, trace2, trace3]
-    return plot.plotly.iplot(data)
+
+    fig = plot.tools.make_subplots(rows = 3, cols = 1)
+    fig.append_trace(data)
+
+    return plot.plotly.iplot(fig)
