@@ -1,6 +1,6 @@
 import pandas as pd
 from pymongo import MongoClient
-from bokeh.plotting import figure, output_notebook, show
+from bokeh.plotting import figure, output_notebook, show, vplot
 
 
 client = MongoClient()
@@ -46,9 +46,10 @@ def breath_viz(id):
 
 
 def make_plot(df):
-    output_notebook()
+    p1, p2, p3 = figure(plot_height = 200)
+    p1.line(df['time'], df['sm_flow'], color = 'firebrick')
+    p2.line(df['time'], df['sm_paw'], color = 'navy')
+    p3.line(df['time'], df['sm_vol'], color = 'olive')
 
-    p = figure(plot_height = 800)
-    p.line([1, 2, 3], [1, 2, 3])
-
+    p = vplot(p1, p2, p3)
     return p
