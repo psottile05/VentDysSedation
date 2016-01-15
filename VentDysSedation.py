@@ -69,5 +69,5 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
                                       {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(3))
 make_EHR_data(files)
 
-for items in input_log.find({'loaded': 1}, {'type': 10}):
+for items in input_log.find({'loaded': 1}, {'type': 1}):
     print(items)
