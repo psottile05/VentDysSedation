@@ -44,14 +44,14 @@ FS.file_search()
 FS.file_match()
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
         DatabaseCreation.get_waveform_and_breath(file)
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_EHR_data(files):
     from CreationModules import EHR_decoder
     for file in files:
@@ -69,5 +69,5 @@ files = list(input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}
                                       {'loaded': 0}]}, {'_id': 1, 'patient_id': 1}).limit(3))
 make_EHR_data(files)
 
-for items in input_log.find({'loaded': 1}, {'type': 10}):
+for items in input_log.find({'loaded': 1}, {'type': 1}):
     print(items)
