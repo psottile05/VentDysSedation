@@ -282,9 +282,13 @@ def get_waveform_and_breath(file):
     try:
         bulk_ops.execute()
     except errors.BulkWriteError as bwe:
-        print('BulkWrite', bwe.details)
-        input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': bwe.details}})
+        for items in bwe.details['writeErrors']:
+            if items['code'] != 11000:
+                print('BulkWrite', items['errmsg'])
+                input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error':items['errmsg']}})
+            else:
+                pass
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
         input_log.update_one({'_id': file['_id']},

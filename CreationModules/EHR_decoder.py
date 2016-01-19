@@ -281,6 +281,8 @@ def lab_analysis(fileName):
 
 
 def load_EHR_data(path, patients):
+    print(path, patients)
+
     if ('RN' in path) and 'edit' not in path:
         try:
             rn_df = data_analysis(path)
@@ -312,4 +314,4 @@ def load_EHR_data(path, patients):
     else:
         print(path, 'unknown file type')
 
-    input_log.update_one({'_id': path}, {'$set': {'loaded': 1}})
+    #input_log.update_one({'_id': path}, {'$set': {'loaded': 1}})

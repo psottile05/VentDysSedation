@@ -10,7 +10,8 @@ client = MongoClient()
 db = client.VentDB
 input_log = db.input_log
 
-p = Path('c:\Research_data\RawData')
+#p = Path('c:\Research_data\RawData')
+p = Path('/media/veracrypt1/Research_Data/VentDysSedation/RawData/')
 
 
 def match_stats():
