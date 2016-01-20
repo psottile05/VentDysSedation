@@ -32,6 +32,7 @@ def file_search():
     for x in p.iterdir():
         files = [y for y in x.glob('*.txt')]
         for file in files:
+            #TODO check to make sure file size is not zero
             if 'Breath' in file.name or 'breath' in file.name:
                 file_type = "breath"
             elif 'Waveform' in file.name or 'waveform' in file.name:
@@ -57,6 +58,7 @@ def file_search():
                     print('ValueError', file.name)
 
             p_id = float(re.search(r'(?<=P)[0-9]*', file.as_posix()).group(0))
+
             try:
                 input_log.insert_one({'_id': file.as_posix(),
                                       'patient_id': p_id,

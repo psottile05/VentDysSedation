@@ -44,7 +44,7 @@ FS.file_search()
 FS.file_match()
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:

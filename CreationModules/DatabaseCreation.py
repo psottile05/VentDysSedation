@@ -82,8 +82,11 @@ def get_breath_data(file):
                              'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
                              'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
                              'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
+
+        #TODO Catch Not DateTime Error
         df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
                                          format = '%d.%m.%y %H:%M:%S')
+
         df['patient_ID'] = int(file['patient_id'])
         df['file'] = file['match_file']
         df.drop(['Date', 'HH:MM:SS', 'patient_ID'], axis = 1, inplace = True)
