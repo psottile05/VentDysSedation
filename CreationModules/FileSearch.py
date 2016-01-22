@@ -32,7 +32,7 @@ def file_search():
     for x in p.iterdir():
         files = [y for y in x.glob('*.txt')]
         for file in files:
-            #TODO check to make sure file size is not zero
+            #TODO check to make sure file size is not zero and collect file size
             if 'Breath' in file.name or 'breath' in file.name:
                 file_type = "breath"
             elif 'Waveform' in file.name or 'waveform' in file.name:
