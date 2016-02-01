@@ -1,8 +1,6 @@
-import numpy as np
 import pandas as pd
-from pymongo import MongoClient
 from ggplot import *
-import numba
+from pymongo import MongoClient
 
 client = MongoClient()
 db = client.VentDB
@@ -15,6 +13,7 @@ def find_shoulder(curve_df, curve, diff):
     shoulder_time = curve_df[(curve_df[diff] < .75) & (curve_df[curve] > max)].head(1)['time'].values.tolist()
     print(shoulder_time)
     return shoulder_time
+
 
 def breath_getter(id):
     global last_value

@@ -1,4 +1,4 @@
-import re
+import os
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,6 @@ from pymongo import MongoClient, bulk, errors
 import AnalysisModules.WaveformAnalysis as WA
 
 __author__ = 'sottilep'
-
 
 client = MongoClient()
 db = client.VentDB
@@ -61,8 +60,27 @@ def align_breath(group, breath_df, file):
 
 
 def get_breath_data(file):
-    if isinstance(file['match_file'], type('String')):
-        df = pd.read_csv(file['match_file'], sep = '\t', header = 1, na_values = '--', engine = 'c',
+    match_file = input_log.find_one({'_id': file['match_file']}, {'file_name': 1})
+    file_path = None
+    if os.name == 'nt':
+        for names in match_file['file_name']['nt']:
+            if os.path.exists(names):
+                file_path = names
+        if file_path is None:
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'miss_match_file_path',
+                                                'miss_match_file_path': match_file['file_name']}})
+    elif os.name == 'posix':
+        for names in match_file['file_name']['posix']:
+            if os.path.exists(names):
+                file_path = names
+        if file_path is None:
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'miss_match_file_path',
+                                                'miss_match_file_path': match_file['file_name']}})
+
+    if isinstance(file_path, type('String')):
+        df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
                          usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
                                     'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
                                     'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
@@ -83,9 +101,14 @@ def get_breath_data(file):
                              'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
                              'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
 
-        #TODO Catch Not DateTime Error
-        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
-                                         format = '%d.%m.%y %H:%M:%S')
+        try:
+            df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                             format = '%d.%m.%y %H:%M:%S')
+        except ValueError:
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'time_parse_error',
+                                                'time_parse_error': file_path}})
+            df['date_time'] = np.nan
 
         df['patient_ID'] = int(file['patient_id'])
         df['file'] = file['match_file']
@@ -118,7 +141,24 @@ def get_breath_data(file):
 
 
 def get_waveform_data(file):
-    df = pd.read_csv(file['_id'], sep = '\t', header = 1, na_values = '--', engine = 'c',
+    file_path = None
+    if os.name == 'nt':
+        for names in file['file_name']['nt']:
+            if os.path.exists(names):
+                file_path = names
+        if file_path is None:
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'missing_file_path',
+                                                'missing_file_path': file['file_name']}})
+    elif os.name == 'posix':
+        for names in file['file_name']['posix']:
+            if os.path.exists(names):
+                file_path = names
+        if file_path is None:
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'missing_file_path', 'missing_file_path': file['file_name']}})
+
+    df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
                                 'Volume (ml)'])
     df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
@@ -126,9 +166,8 @@ def get_waveform_data(file):
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
-
-    df['patient_ID'] = int(re.search('(?<=P)[0-9]*', file['_id']).group())
-    df['file'] = str(re.search('(?<=\d\d/).*', file['_id']).group())
+    df['patient_ID'] = int(file['patient_id'])
+    df['file'] = file_path
     df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
     df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
     df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length = 7, polyorder = 2)
@@ -289,7 +328,7 @@ def get_waveform_and_breath(file):
             if items['code'] != 11000:
                 print('BulkWrite', items['errmsg'])
                 input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error':items['errmsg']}})
+                                     {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': items['errmsg']}})
             else:
                 pass
     except errors.InvalidDocument as e:

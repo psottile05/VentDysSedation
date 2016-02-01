@@ -5,4 +5,10 @@ setup(ext_modules = cythonize(
         r'c:\Users\sottilep\PycharmProjects\VentDysSedation\AnalysisModules\WaveformAnalysis.py'), requires = ['pandas',
                                                                                                                'numpy',
                                                                                                                'scipy',
-                                                                                                               'bokeh'])
+                                                                                                               'bokeh',
+                                                                                                               'ipyparallel',
+                                                                                                               'ggplot',
+                                                                                                               'numba',
+                                                                                                               'numba',
+                                                                                                               'numba',
+                                                                                                               'Cython'])

@@ -67,7 +67,7 @@ def data_analysis(fileName):
                    'Plat': {'rows': 0, 'values': []},
                    'iNO': {'rows': 0, 'values': []},
                    'CPOT Tot': {'rows': 0, 'values': []},
-                   'CPOT Vent': {'rows': 0, 'values': []}, }
+                   'CPOT Vent': {'rows': 0, 'values': []},}
 
     final_data = {
         'DateTime': ['BP', 'MAP', 'Pulse', 'A-line', 'A-line MAP', 'CVP', 'SpO2', 'FiO2', 'Resp', 'Vent Mode', 'Set Vt',
@@ -314,4 +314,4 @@ def load_EHR_data(path, patients):
     else:
         print(path, 'unknown file type')
 
-    #input_log.update_one({'_id': path}, {'$set': {'loaded': 1}})
+        # input_log.update_one({'_id': path}, {'$set': {'loaded': 1}})

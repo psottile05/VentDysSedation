@@ -1,17 +1,20 @@
-__author__ = 'sottilep'
-
 import datetime
+import os
 import re
 from pathlib import Path
 
 from pymongo import MongoClient, errors
 
+__author__ = 'sottilep'
+
 client = MongoClient()
 db = client.VentDB
 input_log = db.input_log
 
-#p = Path('c:\Research_data\RawData')
-p = Path('/media/veracrypt1/Research_Data/VentDysSedation/RawData/')
+if os.name == 'nt':
+    p = Path('c:\Research_data\RawData')
+elif os.name == 'posix':
+    p = Path('/media/veracrypt1/Research_Data/VentDysSedation/RawData/')
 
 
 def match_stats():
@@ -32,7 +35,6 @@ def file_search():
     for x in p.iterdir():
         files = [y for y in x.glob('*.txt')]
         for file in files:
-            #TODO check to make sure file size is not zero and collect file size
             if 'Breath' in file.name or 'breath' in file.name:
                 file_type = "breath"
             elif 'Waveform' in file.name or 'waveform' in file.name:
@@ -59,15 +61,25 @@ def file_search():
 
             p_id = float(re.search(r'(?<=P)[0-9]*', file.as_posix()).group(0))
 
+            if os.name == 'nt':
+                nt = str(file)
+                posix = ''
+            elif os.name == 'posix':
+                posix = file.as_posix()
+                nt = ''
+
             try:
-                input_log.insert_one({'_id': file.as_posix(),
+                input_log.insert_one({'_id': str(p_id) + '_' + file.name,
                                       'patient_id': p_id,
                                       'type': file_type,
+                                      'file_name': {'posix': [posix], 'nt': [nt]},
+                                      'file_size': file.stat().st_size,
                                       'start_time': start_time,
                                       'loc': [start_time.timestamp(), p_id],
                                       'loaded': 0, 'crossed': 0})
             except errors.DuplicateKeyError:
-                pass
+                input_log.update_one({'_id': str(p_id) + '_' + file.name},
+                                     {'file_name': {'$addToSet': {'posix': posix, 'nt': nt}}})
             except Exception as e:
                 print('File Error: ', e)
 
