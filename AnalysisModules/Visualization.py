@@ -5,22 +5,30 @@ from bokeh.plotting import figure, output_notebook, show, vplot
 client = MongoClient()
 db = client.VentDB
 breath_db = db.breath_collection
+train_db = db.train_collection
+
+
+def get_sample():
+    if train_db.find().count() == 0:
+        breath_db.aggregate([{'$match': {'patient_id': {'lte': 115}}},
+                             {'$sample': {'size': 10000}},
+                             {'$out': 'train_collection'}])
 
 
 def get_breaths(limits):
-    results = breath_db.find().limit(limits)
+    results = train_db.find().limit(limits)
     return results
 
 
 def breath_viz(id):
-    breath = list(breath_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+    breath = list(train_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     breath_start = breath['breath_raw']['time'][0]
     breath_end = breath['breath_raw']['time'][-1]
 
     try:
 
-        pre_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
-                                         {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+        pre_breath = list(train_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
+                                        {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     except IndexError:
         pre_breath = {
             'breath_raw': {'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [], 'time': [],
@@ -29,8 +37,8 @@ def breath_viz(id):
                            'sm_dP/dTT': []}}
 
     try:
-        post_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
-                                          {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+        post_breath = list(train_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
+                                         {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     except IndexError:
         post_breath = {
             'breath_raw': {'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [], 'time': [],
@@ -76,6 +84,9 @@ def update_database(_id, labels):
                 'garb': 1 if 'Garbage' in labels else 0,
                 }
 
-    breath_db.update({'_id': _id}, {'$set': {'validation': analysis}})
+    train_db.update({'_id': _id}, {'$set': {'validation': analysis}})
 
     return
+
+
+get_sample()
