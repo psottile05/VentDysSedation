@@ -79,7 +79,7 @@ def file_search():
                                       'loaded': 0, 'crossed': 0})
             except errors.DuplicateKeyError:
                 input_log.update_one({'_id': str(p_id) + '_' + file.name},
-                                     {'file_name': {'$addToSet': {'posix': posix, 'nt': nt}}})
+                                     {'$addToSet': {'file_name': {'posix': posix, 'nt': nt}}})
             except Exception as e:
                 print('File Error: ', e)
 
