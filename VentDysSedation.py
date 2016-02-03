@@ -18,7 +18,7 @@ input_log = db.input_log
 breath_col = db.breath_collection
 
 input_log.drop()
-# breath_col.drop()
+breath_col.drop()
 
 try:
     input_log.create_index([('type', pymongo.TEXT)])
@@ -60,11 +60,11 @@ files = input_log.find({'type': 'waveform', 'loaded': 0, 'file_size': {'$gt': 0}
 make_waveform_and_breath(files)
 
 # Query DB for list of EHR files not yet added
-files = input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
-                                 {'type': {'$not': re.compile(r'breath')}},
-                                 {'type': {'$not': re.compile(r'other')}},
-                                 {'loaded': 0}, {'file_size': {'gte': 0}}]}, {'_id': 1, 'patient_id': 1}).limit(3)
-make_EHR_data(files)
+#files = input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
+#                                 {'type': {'$not': re.compile(r'breath')}},
+#                                 {'type': {'$not': re.compile(r'other')}},
+#                                 {'loaded': 0}, {'file_size': {'gte': 0}}]}, {'_id': 1, 'patient_id': 1}).limit(3)
+#make_EHR_data(files)
 
 for items in input_log.find({'loaded': 1}, {'type': 1}):
     print(items)
