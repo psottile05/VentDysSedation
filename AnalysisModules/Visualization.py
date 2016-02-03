@@ -9,26 +9,27 @@ train_db = db.train_collection
 
 
 def get_sample():
-    if train_db.find().count() == 0:
-        breath_db.aggregate([{'$match': {'patient_id': {'lte': 115}}},
+    if train_db.find().count() == 1000:
+        print('making train_collection')
+        breath_db.aggregate([{'$match': {'patient_id': {'$lt': 115}}},
+                             {'$project': {'_id': 1}},
                              {'$sample': {'size': 10000}},
                              {'$out': 'train_collection'}])
 
 
 def get_breaths(limits):
-    results = train_db.find().limit(limits)
+    results = train_db.find({'validation': {'$exists': 0}}).limit(limits)
     return results
 
 
 def breath_viz(id):
-    breath = list(train_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+    breath = list(breath_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     breath_start = breath['breath_raw']['time'][0]
     breath_end = breath['breath_raw']['time'][-1]
 
     try:
-
-        pre_breath = list(train_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
-                                        {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+        pre_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
+                                         {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     except IndexError:
         pre_breath = {
             'breath_raw': {'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [], 'time': [],
@@ -37,8 +38,8 @@ def breath_viz(id):
                            'sm_dP/dTT': []}}
 
     try:
-        post_breath = list(train_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
-                                         {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+        post_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
+                                          {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
     except IndexError:
         post_breath = {
             'breath_raw': {'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [], 'time': [],
