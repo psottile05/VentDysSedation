@@ -70,7 +70,7 @@ def file_search():
 
             try:
                 input_log.insert_one({'_id': str(p_id) + '_' + file.name,
-                                      'patient_id': p_id,
+                                      'patient_id': int(p_id),
                                       'type': file_type,
                                       'file_name': {'posix': [posix], 'nt': [nt]},
                                       'file_size': file.stat().st_size,
