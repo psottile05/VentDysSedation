@@ -17,8 +17,8 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-input_log.drop()
-breath_col.drop()
+#input_log.drop()
+#breath_col.drop()
 
 try:
     input_log.create_index([('type', pymongo.TEXT)])
@@ -41,7 +41,7 @@ FS.file_search()
 FS.file_match()
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
