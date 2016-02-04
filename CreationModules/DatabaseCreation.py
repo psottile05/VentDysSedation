@@ -284,7 +284,7 @@ def waveform_data_entry(group, breath_df, file):
     breath_setting = align_breath(group, breath_df, file)
 
     mongo_record = {
-        '_id': str(group.patient_ID.head(1)) + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
+        '_id': str(group.patient_ID.head(1).values[0]) + '/' + str(group.breath.min()) + '/' + str(group.date_time.min())
                + '/' + str(start_time),
         'patient_id': int(group.patient_ID.head(1)),
         'file': group.file.head(1).values[0],
