@@ -70,7 +70,7 @@ def file_search():
 
             try:
                 input_log.insert_one({'_id': str(p_id) + '_' + file.name,
-                                      'patient_id': p_id,
+                                      'patient_id': int(p_id),
                                       'type': file_type,
                                       'file_name': {'posix': [posix], 'nt': [nt]},
                                       'file_size': file.stat().st_size,
@@ -79,7 +79,7 @@ def file_search():
                                       'loaded': 0, 'crossed': 0})
             except errors.DuplicateKeyError:
                 input_log.update_one({'_id': str(p_id) + '_' + file.name},
-                                     {'file_name': {'$addToSet': {'posix': posix, 'nt': nt}}})
+                                     {'$addToSet': {'file_name.posix': posix, 'file_name.nt': nt}})
             except Exception as e:
                 print('File Error: ', e)
 
