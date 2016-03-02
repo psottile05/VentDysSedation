@@ -105,10 +105,14 @@ def get_breath_data(file):
             df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
                                              format = '%d.%m.%y %H:%M:%S')
         except ValueError:
-            input_log.update_one({'_id': file['_id']},
+            try:
+                df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                                 infer_datetime_format=True)
+            except ValueError:
+                input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'time_parse_error',
                                                 'time_parse_error': file_path}})
-            df['date_time'] = np.nan
+                df['date_time'] = np.nan
 
         df['patient_ID'] = int(file['patient_id'])
         df['file'] = file['match_file']
@@ -161,8 +165,19 @@ def get_waveform_data(file):
     df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
                                 'Volume (ml)'])
-    df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+    try:
+        df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
                                      format = '%d.%m.%y %H:%M:%S')
+    except ValueError:
+        try:
+            df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                                                 infer_datetime_format=True)
+        except ValueError:
+                input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'time_parse_error',
+                                                'time_parse_error': file_path}})
+                df['date_time'] = np.nan
+
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
@@ -314,6 +329,8 @@ def get_waveform_and_breath(file):
     bulk_ops = bulk.BulkOperationBuilder(breath_col, ordered = False)
 
     for name, group in wave_df.groupby('breath', sort = False):
+        input_log.update_one({'_id':file['_id'], 'errors':'insert_error'},
+                             {'$unset':{'errors':'', 'insert_error':'', 'other_error':''}})
         try:
             bulk_ops.insert(waveform_data_entry(group, breath_df, file))
         except Exception as e:
@@ -328,7 +345,7 @@ def get_waveform_and_breath(file):
             if items['code'] != 11000:
                 print('BulkWrite', items['errmsg'])
                 input_log.update_one({'_id': file['_id']},
-                                     {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': items['errmsg']}})
+                                     {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': 'bulk error'}})
             else:
                 pass
     except errors.InvalidDocument as e:
@@ -336,7 +353,9 @@ def get_waveform_and_breath(file):
         input_log.update_one({'_id': file['_id']},
                              {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': str(e)}})
     except Exception as e:
-        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'insert_error', 'other_error': str(e)}})
+        input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'other_error', 'other_error': str(e)}})
+        print('Error1', e)
+
 
     if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
