@@ -6,7 +6,8 @@ client = pymongo.MongoClient()
 db = client.VentDyssynchrony_db
 ventSettings = db.VentSettings_collection
 breathData = db.BreathData_collection
-
+RT = db.RTData_collection
+RN = db.RNData_collection
 
 def custom_resampler(dict_like):
     return dict_like['analysis.' + ds_types].sum(), dict_like['breath_number'].count(), dict_like['patientID'].max(), \
@@ -24,17 +25,66 @@ def bin_samples(x):
         return 1
 
 
+def unpack(x):
+    fio2 = np.nan
+    set_vt = np.nan
+    peep = np.nan
+
+    for items in x:
+        for keys, values in items.items():
+            if keys == 'FiO2':
+                fio2 = values
+            elif keys == 'Set Vt':
+                set_vt = values
+            elif keys == 'PEEP':
+                peep = values
+
+    return (fio2, peep, set_vt)
+
 for ds_types in ['ds', 'pl', 'pvt', 'ie']:
     data = breathData.find({},
                            {'patientID': 1, 'start_time': 1, 'breath_number': 1, 'vent_settings.PEEP': 1,
                             'vent_settings.FiO2': 1, 'vent_settings.compliance': 1, 'vent_settings.set_VT': 1,
                             'vent_settings.p_peak': 1, 'analysis.' + ds_types: 1, '_id': 0})
 
+    rn = RN.find({'RN_entry.FiO2': {'$exists': 1}},
+                 {'patientID': 1, 'entry_time': 1, 'RN_entry.FiO2': 1, 'RN_entry.PEEP': 1, 'RN_entry.Set Vt': 1,
+                  '_id': 0})
+
+    rt = RT.find({'RT_entry.FiO2': {'$exists': 1}},
+                 {'patientID': 1, 'entry_time': 1, 'RT_entry.FiO2': 1, 'RT_entry.PEEP': 1, 'RT_entry.Set Vt': 1,
+                  '_id': 0})
+
     df = pd.io.json.json_normalize(data)
     df['start_time'] = pd.to_datetime(df['start_time'])
-    df.set_index('start_time', inplace = True)
+    df.drop_duplicates(subset = 'start_time', keep = 'last', inplace = True)
+    df.set_index(['patientID', 'start_time'], inplace = True, verify_integrity = True, drop = False)
     df.sort_index(inplace = True)
     df['vent_settings.PEEP'] = df['vent_settings.PEEP'].astype(np.float64)
+
+    rt_df = pd.io.json.json_normalize(list(rt))
+    rn_df = pd.io.json.json_normalize(list(rn))
+
+    rt_df['temp'] = rt_df.RT_entry.apply(unpack)
+    rt_df['vent_settings.FiO2'] = rt_df['temp'].apply(lambda x: x[0])
+    rt_df['vent_settings.PEEP'] = rt_df['temp'].apply(lambda x: x[1])
+    rt_df['vent_settings.set_VT'] = rt_df['temp'].apply(lambda x: x[2])
+    rt_df.drop(['RT_entry', 'temp'], inplace = True, axis = 1)
+
+    rn_df['temp'] = rn_df.RN_entry.apply(unpack)
+    rn_df['vent_settings.FiO2'] = rn_df['temp'].apply(lambda x: x[0])
+    rn_df['vent_settings.PEEP'] = rn_df['temp'].apply(lambda x: x[1])
+    rn_df['vent_settings.set_VT'] = rn_df['temp'].apply(lambda x: x[2])
+    rn_df.drop(['RN_entry', 'temp'], inplace = True, axis = 1)
+
+    rt_df.set_index(['patientID', 'entry_time'], inplace = True)
+    rn_df.set_index(['patientID', 'entry_time'], inplace = True)
+
+    final = rt_df.combine_first(rn_df)
+    final.index.set_names(['patientID', 'start_time'], inplace = True)
+
+    df = df.combine_first(final)
+    df.set_index(['start_time'], inplace = True)
 
     print(df.columns)
 
