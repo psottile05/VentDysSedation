@@ -53,7 +53,10 @@ def data_collect(patient, patient_info):
             start, stop = items.strip('()').split(',')
             start = pd.to_datetime(start)
             stop = pd.to_datetime(stop)
-            rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
+            if start < stop:
+                rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
+            else:
+                rn_df.loc[(rn_df.index >= stop) & (rn_df.index <= start), 'RASS'] = -6
         print(rn_df.RASS.describe())
 
     results = rt_data.find({'patientID': patient, 'RT_entry.Plat': {'$exists': 1}},
