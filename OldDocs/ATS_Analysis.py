@@ -54,6 +54,7 @@ def data_collect(patient, patient_info):
             start = pd.to_datetime(start)
             stop = pd.to_datetime(stop)
             if start < stop:
+                print('indexing')
                 rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
             else:
                 rn_df.loc[(rn_df.index >= stop) & (rn_df.index <= start), 'RASS'] = -6
