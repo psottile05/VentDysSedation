@@ -45,7 +45,7 @@ def data_collect(patient, patient_info):
         rn_df['SpO2'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'SpO2'))
         rn_df.drop(['RN_entry'], axis = 1, inplace = True)
 
-    print(patient_info)
+    print('info', patient_info)
     if patient_info['NMB'] == 1:
         start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
 
@@ -53,7 +53,7 @@ def data_collect(patient, patient_info):
             start, stop = items.strip('()').split(',')
             start = pd.to_datetime(start)
             stop = pd.to_datetime(stop)
-            print(start, stop)
+            print('ok', start, stop)
             if start < stop:
                 print('indexing')
                 rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
