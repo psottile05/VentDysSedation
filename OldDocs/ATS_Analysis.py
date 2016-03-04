@@ -47,11 +47,13 @@ def data_collect(patient, patient_info):
 
     if patient_info['NMB'] == 1:
         start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
+        print(start_stop)
         for items in start_stop:
             start, stop = items.strip('()').split(',')
             start = pd.to_datetime(start)
             stop = pd.to_datetime(stop)
             rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
+        print(rn_df.RASS.describe())
 
     results = rt_data.find({'patientID': patient, 'RT_entry.Plat': {'$exists': 1}},
                            {'_id': 0, 'patientID': 1, 'entry_time': 1, 'RT_entry': 1})

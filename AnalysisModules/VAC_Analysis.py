@@ -61,6 +61,10 @@ for ds_types in ['ds', 'pl', 'pvt', 'ie']:
     df.set_index(['patientID', 'start_time'], inplace = True, verify_integrity = True, drop = False)
     df.sort_index(inplace = True)
     df['vent_settings.PEEP'] = df['vent_settings.PEEP'].astype(np.float64)
+    df['breath_number'] = df['breath_number'].astype(np.float64)
+    df['analysis.' + ds_types] = df['analysis.' + ds_types].astype(np.float64)
+
+    print('Pre ', df.shape)
 
     rt_df = pd.io.json.json_normalize(list(rt))
     rn_df = pd.io.json.json_normalize(list(rn))
@@ -86,16 +90,21 @@ for ds_types in ['ds', 'pl', 'pvt', 'ie']:
     df = df.combine_first(final)
     df.set_index(['start_time'], inplace = True)
 
+    print('Post ', df.shape)
     print(df.columns)
 
     grouped_df = df.groupby('patientID')
 
     resampled_df = pd.DataFrame()
     for name, group in grouped_df:
-        group = group.resample('6H', how = custom_resampler)
-        group['ds_freq'] = group['analysis.' + ds_types] / group['breath_number']
+        group = group.resample('2H', how = custom_resampler)
 
-        for lags in [4, 6, 8]:
+        try:
+            group['ds_freq'] = group['analysis.' + ds_types] / group['breath_number']
+        except ZeroDivisionError:
+            print(group['analysis.' + ds_types, 'breath_number'])
+
+        for lags in [12, 18, 24]:
             for items in ['ds', 'FiO2', 'PEEP', 'p_peak', 'set_VT']:
                 if items == 'ds':
                     group[items + '_lag_' + str(lags)] = np.nan
@@ -110,7 +119,7 @@ for ds_types in ['ds', 'pl', 'pvt', 'ie']:
     resampled_df.dropna(how = 'any', subset = ['vent_settings.FiO2'], inplace = True)
     resampled_df.replace({0: np.nan}, inplace = True)
 
-    for times in ['4', '6', '8']:
+    for times in ['12', '18', '24']:
         resampled_df['ds_lag_' + times + '_bin'] = resampled_df['ds_lag_' + times].apply(bin_samples)
 
-    resampled_df.to_csv('c:\Research_data\lagged_analysis_' + ds_types + '.csv')
+    resampled_df.to_csv('c:\Research_data\lagged_analysis_2_' + ds_types + '.csv')
