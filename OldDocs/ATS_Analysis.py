@@ -48,7 +48,7 @@ def data_collect(patient, patient_info):
     print(patient_info)
     if patient_info['NMB'] == 1:
         start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
-        print(start_stop)
+
         for items in start_stop:
             start, stop = items.strip('()').split(',')
             start = pd.to_datetime(start)
