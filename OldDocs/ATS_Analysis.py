@@ -47,13 +47,15 @@ def data_collect(patient, patient_info):
 
     print('info', patient_info['NMB'])
     if patient_info['NMB'] == 'Yes':
+        print(patient_info['Start_End_NMB'])
         start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
 
         for items in start_stop:
+            print(items, start_stop)
             start, stop = items.strip('()').split(',')
             start = pd.to_datetime(start)
             stop = pd.to_datetime(stop)
-            # print('ok', start, stop)
+            print('ok', start, stop)
             if start < stop:
                 #print('indexing')
                 rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
