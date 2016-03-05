@@ -46,7 +46,7 @@ def data_collect(patient, patient_info):
         rn_df.drop(['RN_entry'], axis = 1, inplace = True)
 
     print('info', patient_info['NMB'])
-    if patient_info['NMB'] == 1:
+    if patient_info['NMB'] == 'Yes':
         start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
 
         for items in start_stop:
