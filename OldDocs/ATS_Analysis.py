@@ -45,10 +45,9 @@ def data_collect(patient, patient_info):
         rn_df['SpO2'] = rn_df['RN_entry'].apply(lambda x: unpack_entry(x, 'SpO2'))
         rn_df.drop(['RN_entry'], axis = 1, inplace = True)
 
-    print('info', patient_info['NMB'])
     if patient_info['NMB'] == 'Yes':
         print(patient_info['Start_End_NMB'])
-        start_stop = patient_info['Start_End_NMB'].strip('[]').split('), (')
+        start_stop = patient_info['Start_End_NMB'].strip('[]').split(';')
 
         for items in start_stop:
             print(items, start_stop)
