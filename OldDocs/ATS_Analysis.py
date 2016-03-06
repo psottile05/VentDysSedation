@@ -46,20 +46,15 @@ def data_collect(patient, patient_info):
         rn_df.drop(['RN_entry'], axis = 1, inplace = True)
 
     if patient_info['NMB'] == 'Yes':
-        # print(patient_info['Start_End_NMB'])
         start_stop = patient_info['Start_End_NMB'].strip('[]').split(';')
 
         for items in start_stop:
-            #print(items, start_stop)
             start, stop = items.strip('()').split(',')
             start = pd.to_datetime(start)
             stop = pd.to_datetime(stop)
-            #print('ok', start, stop)
             if start < stop:
-                #print('indexing')
                 rn_df.loc[(rn_df.index >= start) & (rn_df.index <= stop), 'RASS'] = -6
             else:
-                #print('alt indexing')
                 rn_df.loc[(rn_df.index >= stop) & (rn_df.index <= start), 'RASS'] = -6
         print(rn_df.RASS.describe())
 
@@ -92,7 +87,7 @@ def data_collect(patient, patient_info):
 
 
 def collection_freq(breath_df, win):
-    for ds_type in ['ds', 'pl', 'ie']:
+    for ds_type in ['ds', 'pl', 'pvt', 'ie']:
         breath_df['{0}_rolling'.format(ds_type)] = pd.rolling_sum(breath_df['analysis.' + ds_type], window = 60 * win,
                                                                   center = True, min_periods = 1)
         breath_df[ds_type + '_tot_rolling'] = pd.rolling_count(breath_df['analysis.' + ds_type], window = 60 * win,
