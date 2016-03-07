@@ -87,6 +87,7 @@ def data_collect(patient, patient_info):
 
 
 def collection_freq(breath_df, win):
+    print(breath_df.columns)
     for ds_type in ['ds', 'pl', 'pvt', 'ie']:
         breath_df['{0}_rolling'.format(ds_type)] = pd.rolling_sum(breath_df['analysis.' + ds_type], window = 60 * win,
                                                                   center = True, min_periods = 1)
@@ -121,7 +122,7 @@ def rolling_rass_combi(breath_df, rn_df):
     combi_df.drop(
         ['analysis.ds', 'analysis.fl', 'analysis.ie', 'analysis.pl', 'analysis.pvt', 'patientID_l'],
         axis = 1, inplace = True)
-    combi_df.dropna(axis = 0, how = 'all', subset = ['ds_freq', 'ie_freq', 'pl_freq'], inplace = True)
+    combi_df.dropna(axis = 0, how = 'all', subset = ['ds_freq', 'ie_freq', 'pvt_freq', 'pl_freq'], inplace = True)
 
     return combi_df
 
