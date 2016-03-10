@@ -9,7 +9,8 @@ train_db = db.train_collection
 
 
 def get_sample():
-    if train_db.find().count() == 1000:
+    if train_db.find().count() != 10000:
+        db.drop_collection('train_collection')
         print('making train_collection')
         breath_db.aggregate([{'$match': {'patient_id': {'$lt': 115}}},
                              {'$project': {'_id': 1}},
