@@ -59,6 +59,8 @@ def breath_viz(id):
                         pd.DataFrame(post_breath['breath_raw'])])
     except:
         df = pd.DataFrame()
+        breath_end = 0
+        breath_start = 0
 
     return df, breath_start, breath_end
 
