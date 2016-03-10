@@ -67,6 +67,7 @@ def breath_viz(id):
                            'sm_dP/dTT': []})
         breath_end = 0
         breath_start = 0
+        print('breath error:', id)
 
     return df, breath_start, breath_end
 
