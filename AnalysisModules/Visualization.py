@@ -30,8 +30,8 @@ def breath_viz(id):
         breath_end = breath['breath_raw']['time'][-1]
 
         try:
-            pre_breath = list(train_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
-                                            {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+            pre_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
+                                             {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
         except IndexError:
             pre_breath = {
                 'breath_raw': {'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [],
@@ -43,8 +43,8 @@ def breath_viz(id):
                                'sm_dP/dTT': []}}
 
         try:
-            post_breath = list(train_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
-                                             {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+            post_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
+                                              {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
         except IndexError:
             post_breath = {
                 'breath_raw': {'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [],
