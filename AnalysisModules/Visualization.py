@@ -68,6 +68,7 @@ def breath_viz(id):
         breath_end = 0
         breath_start = 0
         print('breath error:', id)
+        print(list(breath_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1})))
 
     return df, breath_start, breath_end
 
