@@ -58,7 +58,13 @@ def breath_viz(id):
         df = pd.concat([pd.DataFrame(pre_breath['breath_raw']), pd.DataFrame(breath['breath_raw']),
                         pd.DataFrame(post_breath['breath_raw'])])
     except:
-        df = pd.DataFrame()
+        df = pd.DataFrame({'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [],
+                           'time': [],
+                           'sm_dF/dT': [], 'sm_flow': [], 'status': [], 'sm_dF/dTT': [], 'sm_dV/dT': [],
+                           'dP/dV': [],
+                           'paw': [], 'sm_paw': [], 'sm_dP/dT': [], 'dF/dV': [], 'dP/dT': [], 'dV/dT': [],
+                           'dF/dP': [],
+                           'sm_dP/dTT': []})
         breath_end = 0
         breath_start = 0
 
