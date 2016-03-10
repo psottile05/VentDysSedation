@@ -58,7 +58,7 @@ def breath_viz(id):
         df = pd.concat([pd.DataFrame(pre_breath['breath_raw']), pd.DataFrame(breath['breath_raw']),
                         pd.DataFrame(post_breath['breath_raw'])])
     except:
-        pass
+        df = pd.DataFrame()
 
     return df, breath_start, breath_end
 
