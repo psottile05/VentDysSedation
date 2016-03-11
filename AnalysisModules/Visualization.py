@@ -11,7 +11,7 @@ train_db = db.train_collection
 def get_sample():
     if train_db.find().count() < 10000:
         answ = input('Are you sure you want to drop the training set?? (y/n)')
-        if answ = 'y'
+        if answ == 'y'
         db.drop_collection('train_collection')
         print('making train_collection')
         breath_db.aggregate([{'$match': {'patient_id': {'$lt': 115}}},
