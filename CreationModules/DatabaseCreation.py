@@ -125,13 +125,15 @@ def get_breath_data(file):
                  'leak': 'float64',
                  'exp_flow': 'float64', 'peak_paw': 'float64', 'mean_paw': 'float64', 'plat_paw': 'float64',
                  'auto_peep': 'float64', 'min_paw': 'float64', 'insp_paw': 'float64', 'rr': 'float64',
-                 't_exp': 'float64', 'high_paw_alarm': 'object',
+                 't_exp': 'float64', 'high_paw_alarm': 'float64',
                  'compliance': 'float64', 't_insp': 'float64', 'date_time': 'datetime64[ns]', 'patient_ID': 'int64'}
 
         date_check(df, file)
         dtype_check(df, types, file)
 
         df.set_index(['date_time'], inplace = True)
+        df.vent_mode = df.vent_mode.astype('category')
+        df.file = df.file.astype('category')
         df = df.resample('1s', fill_method = 'pad', limit = 30)
 
     else:
