@@ -80,7 +80,8 @@ def get_breath_data(file):
                                                 'miss_match_file_path': match_file['file_name']}})
 
     if isinstance(file_path, type('String')):
-        df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
+        try:
+            df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
                          usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
                                     'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
                                     'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
@@ -90,16 +91,28 @@ def get_breath_data(file):
                                     'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
                                     'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
                                     'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)', '!High Pressure'])
-        df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
-                             'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
-                             'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
-                             'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
-                             'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
-                             'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
-                             'P mean (cmH2O)': 'mean_paw', '!High Pressure': 'high_paw_alarm',
-                             'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
-                             'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
-                             'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'}, inplace = True)
+            df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
+                                 'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
+                                 'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
+                                 'Ramp (ms)': 'ramp', 'VTI (ml)': 'vti', 'VTE (ml)': 'vte',
+                                 'ExpMinVol (l/min)': 'exp_minute_vol', 'Insp flow (l/min)': 'insp_flow',
+                                 'Vt leak (ml)': 'leak', 'Exp flow (l/min)': 'exp_flow', 'P peak (cmH2O)': 'peak_paw',
+                                 'P mean (cmH2O)': 'mean_paw', '!High Pressure': 'high_paw_alarm',
+                                 'P plateau (cmH2O)': 'plat_paw', 'AutoPEEP (cmH2O)': 'auto_peep',
+                                 'P min (cmH2O)': 'min_paw', 'Pinsp (cmH2O)': 'insp_paw', 'f total (b/min)': 'rr',
+                                 'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'},
+                      inplace = True)
+        except:
+            df = pd.DataFrame({'Date': [np.nan], 'HH:MM:SS': [np.nan], 'set_VT': [0], 'peak_flow': [0], 'ptrigg': [0],
+                               'peep': [0], 'psupp': [0],
+                               'vent_mode': [0], 'fio2': [0], 'tigger': [0], 'i:e': [0],
+                               'ramp': [0], 'vti': [0], 'vte': [0],
+                               'exp_minute_vol': [0], 'insp_flow': [0],
+                               'leak': [0], 'exp_flow': [0], 'peak_paw': [0],
+                               'mean_paw': [0], 'high_paw_alarm': [0],
+                               'plat_paw': [0], 'auto_peep': [0],
+                               'min_paw': [0], 'insp_paw': [0], 'rr': [0],
+                               't_exp': [0], 'compliance': [0], 't_insp': [0]})
 
         try:
             df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
@@ -107,11 +120,11 @@ def get_breath_data(file):
         except ValueError:
             try:
                 df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
-                                                 infer_datetime_format=True)
+                                                 infer_datetime_format = True)
             except ValueError:
                 input_log.update_one({'_id': file['_id']},
-                                 {'$addToSet': {'errors': 'time_parse_error',
-                                                'time_parse_error': file_path}})
+                                     {'$addToSet': {'errors': 'time_parse_error',
+                                                    'time_parse_error': file_path}})
                 df['date_time'] = np.nan
 
         df['patient_ID'] = int(file['patient_id'])
@@ -134,7 +147,7 @@ def get_breath_data(file):
         df.set_index(['date_time'], inplace = True)
         df.vent_mode = df.vent_mode.astype('category')
         df.file = df.file.astype('category')
-        df = df.resample('1s', fill_method = 'pad', limit = 30)
+        df = df.resample('1s').pad(limit = 30)
 
     else:
         print('missing breath file')
@@ -169,16 +182,16 @@ def get_waveform_data(file):
                                 'Volume (ml)'])
     try:
         df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
-                                     format = '%d.%m.%y %H:%M:%S')
+                                         format = '%d.%m.%y %H:%M:%S')
     except ValueError:
         try:
             df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
-                                                 infer_datetime_format=True)
+                                             infer_datetime_format = True)
         except ValueError:
-                input_log.update_one({'_id': file['_id']},
+            input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'time_parse_error',
                                                 'time_parse_error': file_path}})
-                df['date_time'] = np.nan
+            df['date_time'] = np.nan
 
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
     df.rename(columns = {'Time(ms)': 'time', 'Breath': 'breath', 'Status': 'status', 'Paw (cmH2O)': 'paw',
@@ -331,8 +344,8 @@ def get_waveform_and_breath(file):
     bulk_ops = bulk.BulkOperationBuilder(breath_col, ordered = False)
 
     for name, group in wave_df.groupby('breath', sort = False):
-        input_log.update_one({'_id':file['_id'], 'errors':'insert_error'},
-                             {'$unset':{'errors':'', 'insert_error':'', 'other_error':''}})
+        input_log.update_one({'_id': file['_id'], 'errors': 'insert_error'},
+                             {'$unset': {'errors': '', 'insert_error': '', 'other_error': ''}})
         try:
             bulk_ops.insert(waveform_data_entry(group, breath_df, file))
         except Exception as e:
@@ -357,7 +370,6 @@ def get_waveform_and_breath(file):
     except Exception as e:
         input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'other_error', 'other_error': str(e)}})
         print('Error1', e)
-
 
     if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
         input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})

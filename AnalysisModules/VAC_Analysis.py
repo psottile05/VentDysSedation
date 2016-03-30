@@ -9,6 +9,7 @@ breathData = db.BreathData_collection
 RT = db.RTData_collection
 RN = db.RNData_collection
 
+
 def custom_resampler(dict_like):
     return dict_like['analysis.' + ds_types].sum(), dict_like['breath_number'].count(), dict_like['patientID'].max(), \
            dict_like['vent_settings.FiO2'].mean(), dict_like['vent_settings.PEEP'].mean(), \
@@ -39,7 +40,8 @@ def unpack(x):
             elif keys == 'PEEP':
                 peep = values
 
-    return (fio2, peep, set_vt)
+    return fio2, peep, set_vt
+
 
 for ds_types in ['ds', 'pl', 'pvt', 'ie']:
     data = breathData.find({},
