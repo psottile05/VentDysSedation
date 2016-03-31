@@ -17,8 +17,8 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-input_log.drop()
-breath_col.drop()
+# input_log.drop()
+# breath_col.drop()
 
 try:
     input_log.create_index([('type', pymongo.TEXT)])
@@ -56,7 +56,7 @@ def make_EHR_data(files):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = input_log.find({'type': 'waveform', 'loaded': 0, 'patient_id': 102, 'file_size': {'$gt': 100}})
+files = input_log.find({'type': 'waveform', 'loaded': 0, 'file_size': {'$gt': 100}})
 make_waveform_and_breath(files)
 
 # Query DB for list of EHR files not yet added

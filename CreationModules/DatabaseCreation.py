@@ -156,7 +156,7 @@ def get_breath_data(file):
         print('missing breath file')
         df = pd.DataFrame()
         input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'warning': 'missing_breath_file_warning',
+                             {'$addToSet': {'warnings': 'missing_breath_file_warning',
                                             'missing_breath_file_warning': 'no breath file'}})
 
     return df
