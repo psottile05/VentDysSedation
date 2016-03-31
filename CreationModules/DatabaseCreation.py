@@ -17,10 +17,13 @@ breath_col = db.breath_collection
 
 
 def date_check(df, file):
-    if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
-        print('Year out of range', df['date_time'].dt.year.min())
-        input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'errors': 'date_range_error', 'date_range_error': file['_id']}})
+    try:
+        if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
+            print('Year out of range', df['date_time'].dt.year.min())
+            input_log.update_one({'_id': file['_id']},
+                                 {'$addToSet': {'errors': 'date_range_error', 'date_range_error': file['_id']}})
+    except AttributeError:
+        print('unable to assess date_time')
 
 
 def dtype_check(df, types, file):
@@ -32,9 +35,17 @@ def dtype_check(df, types, file):
                 print('Assertion Error at ' + col + ' for P' + str(df['patient_ID'].head(1).values.tolist()[0]) + '/'
                       + str(df['file'].head(1).values.tolist()[0]))
                 print('Dtype is ' + str(df[col].dtype) + ' but should be ' + types[col])
-                print(df[col])
-                input_log.update_one({'_id': file['_id']},
-                                     {'$addToSet': {'errors': 'dtype_error', 'dtype_error': df['breath_num']}})
+
+                try:
+                    df[col] = df[col].astype(types[col])
+                    print('Successful conversion')
+                except:
+                    print('failed conversion')
+                    print(df[col])
+                    input_log.update_one({'_id': file['_id']},
+                                         {'$addToSet': {'errors': 'dtype_error', 'dtype_error': df['file']}})
+            else:
+                df[col] = df[col].astype(types[col])
 
 
 def align_breath(group, breath_df, file):
@@ -85,15 +96,17 @@ def get_breath_data(file):
     if isinstance(file_path, type('String')):
         try:
             df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
-                         usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
-                                    'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
+                             usecols = ['Date', 'HH:MM:SS', 'Vt (ml)', 'PeakFlow (l/min)',
+                                        'Ptrigg (cmH2O)', 'Peep (cmH2O)', 'Psupp (cmH2O)',
                                     'Mode', 'Oxygen (%)', 'Trigger', 'I:E',
                                     'Ramp (ms)', 'VTI (ml)', 'VTE (ml)',
                                     'ExpMinVol (l/min)', 'Insp flow (l/min)', 'Vt leak (ml)',
                                     'Exp flow (l/min)', 'P peak (cmH2O)', 'P mean (cmH2O)',
                                     'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
                                     'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
-                                    'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)', '!High Pressure'])
+                                        'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)', '!High Pressure'],
+                             low_memory = False
+                             )
             df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
                                  'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
                                  'Mode': 'vent_mode', 'Oxygen (%)': 'fio2', 'Trigger': 'tigger', 'I:E': 'i:e',
@@ -106,33 +119,37 @@ def get_breath_data(file):
                                  'TE (s)': 't_exp', 'Cstat (ml/cmH2O)': 'compliance', 'TI (s)': 't_insp'},
                       inplace = True)
         except:
-            df = pd.DataFrame({'Date': [np.nan], 'HH:MM:SS': [np.nan], 'set_VT': [0], 'peak_flow': [0], 'ptrigg': [0],
-                               'peep': [0], 'psupp': [0],
-                               'vent_mode': [0], 'fio2': [0], 'tigger': [0], 'i:e': [0],
-                               'ramp': [0], 'vti': [0], 'vte': [0],
-                               'exp_minute_vol': [0], 'insp_flow': [0],
-                               'leak': [0], 'exp_flow': [0], 'peak_paw': [0],
-                               'mean_paw': [0], 'high_paw_alarm': [0],
-                               'plat_paw': [0], 'auto_peep': [0],
-                               'min_paw': [0], 'insp_paw': [0], 'rr': [0],
-                               't_exp': [0], 'compliance': [0], 't_insp': [0]})
+            df = pd.DataFrame({'Date': [np.nan], 'HH:MM:SS': [np.nan], 'set_VT': [np.nan],
+                               'peak_flow': [np.nan], 'ptrigg': [np.nan],
+                               'peep': [np.nan], 'psupp': [np.nan],
+                               'vent_mode': [np.nan], 'fio2': [np.nan], 'tigger': [np.nan], 'i:e': [np.nan],
+                               'ramp': [np.nan], 'vti': [np.nan], 'vte': [np.nan],
+                               'exp_minute_vol': [np.nan], 'insp_flow': [np.nan],
+                               'leak': [np.nan], 'exp_flow': [np.nan], 'peak_paw': [np.nan],
+                               'mean_paw': [np.nan], 'high_paw_alarm': [np.nan],
+                               'plat_paw': [np.nan], 'auto_peep': [np.nan],
+                               'min_paw': [np.nan], 'insp_paw': [np.nan], 'rr': [np.nan],
+                               't_exp': [np.nan], 'compliance': [np.nan], 't_insp': [np.nan]})
+
 
         try:
             df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
                                              format = '%d.%m.%y %H:%M:%S')
         except ValueError:
             try:
-                df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+                df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'coerce',
                                                  infer_datetime_format = True)
             except ValueError:
                 input_log.update_one({'_id': file['_id']},
                                      {'$addToSet': {'errors': 'time_parse_error',
                                                     'time_parse_error': file_path}})
+                print('datetime failed')
                 df['date_time'] = np.nan
 
         df['patient_ID'] = int(file['patient_id'])
         df['file'] = file['match_file']
-        df.drop(['Date', 'HH:MM:SS', 'patient_ID'], axis = 1, inplace = True)
+        df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
+        df.dropna(subset = ['date_time'], how = 'any', axis = 0, inplace = True)
 
         types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
                  'psupp': 'float64', 'file': 'object',
@@ -341,6 +358,7 @@ def waveform_data_entry(group, breath_df, file):
 
 
 def get_waveform_and_breath(file):
+    print(file)
     breath_df = get_breath_data(file)
     wave_df = get_waveform_data(file)
 
