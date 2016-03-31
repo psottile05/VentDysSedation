@@ -60,24 +60,27 @@ def align_breath(group, breath_df, file):
 
 
 def get_breath_data(file):
-    match_file = input_log.find_one({'_id': file['match_file']}, {'file_name': 1})
-    file_path = None
-    if os.name == 'nt':
-        for names in match_file['file_name']['nt']:
-            if os.path.exists(names):
-                file_path = names
-        if file_path is None:
-            input_log.update_one({'_id': file['_id']},
-                                 {'$addToSet': {'errors': 'miss_match_file_path',
-                                                'miss_match_file_path': match_file['file_name']}})
-    elif os.name == 'posix':
-        for names in match_file['file_name']['posix']:
-            if os.path.exists(names):
-                file_path = names
-        if file_path is None:
-            input_log.update_one({'_id': file['_id']},
-                                 {'$addToSet': {'errors': 'miss_match_file_path',
-                                                'miss_match_file_path': match_file['file_name']}})
+    try:
+        match_file = input_log.find_one({'_id': file['match_file']}, {'file_name': 1})
+        file_path = None
+        if os.name == 'nt':
+            for names in match_file['file_name']['nt']:
+                if os.path.exists(names):
+                    file_path = names
+            if file_path is None:
+                input_log.update_one({'_id': file['_id']},
+                                     {'$addToSet': {'errors': 'miss_match_file_path',
+                                                    'miss_match_file_path': match_file['file_name']}})
+        elif os.name == 'posix':
+            for names in match_file['file_name']['posix']:
+                if os.path.exists(names):
+                    file_path = names
+            if file_path is None:
+                input_log.update_one({'_id': file['_id']},
+                                     {'$addToSet': {'errors': 'miss_match_file_path',
+                                                    'miss_match_file_path': match_file['file_name']}})
+    except KeyError:
+        file_path = None
 
     if isinstance(file_path, type('String')):
         try:
@@ -153,8 +156,8 @@ def get_breath_data(file):
         print('missing breath file')
         df = pd.DataFrame()
         input_log.update_one({'_id': file['_id']},
-                             {'$addToSet': {'errors': 'missing_breath_file_error',
-                                            'missing_breath_file': file['match_file']}})
+                             {'$addToSet': {'warning': 'missing_breath_file_warning',
+                                            'missing_breath_file_warning': 'no breath file'}})
 
     return df
 
@@ -372,5 +375,12 @@ def get_waveform_and_breath(file):
         print('Error1', e)
 
     if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
-        input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
-        input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+        try:
+            input_log.update_one({'_id': file['_id']}, {'$set': {'loaded': 1}})
+        except:
+            pass
+
+        try:
+            input_log.update_one({'_id': file['match_file']}, {'$set': {'loaded': 1, 'crossed': 1}})
+        except:
+            pass
