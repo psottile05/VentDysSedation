@@ -56,7 +56,7 @@ def align_breath(group, breath_df, file):
         breath_setting = breath_setting_temp[0]
 
     else:
-        print('align error', file)
+        # print('align error', file)
         breath_setting = {'set_VT': np.nan, 'peak_flow': np.nan, 'ptrigg': np.nan, 'peep': np.nan, 'psupp': np.nan,
                           'fio2': np.nan, 'tigger': np.nan, 'ramp': np.nan, 'vti': np.nan, 'vte': np.nan,
                           'exp_minute_vol': np.nan, 'insp_flow': np.nan, 'leak': np.nan, 'exp_flow': np.nan,
