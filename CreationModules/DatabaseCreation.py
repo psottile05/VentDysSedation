@@ -237,7 +237,7 @@ def get_waveform_data(file):
     df['patient_ID'] = int(file['patient_id'])
     df['file'] = file_path
 
-    print(df.head())
+    # TODO limit if df size is zero
     df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
     df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
     df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length = 7, polyorder = 2)
