@@ -212,6 +212,10 @@ def get_waveform_data(file):
         input_log.update_one({'_id': file['_id']},
                              {'$addToSet': {'errors': 'read_waveform_error',
                                             'read_waveform_error': file_path}})
+        df = pd.DataFrame({'Date': [np.nan], 'HH:MM:SS': [np.nan], 'Time(ms)': [np.nan], 'Breath': [np.nan],
+                           'Status': [np.nan], 'Paw (cmH2O)': [np.nan], 'Flow (l/min)': [np.nan],
+                           'Volume (ml)': [np.nan]}
+                          )
 
     try:
         df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
