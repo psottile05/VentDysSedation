@@ -204,9 +204,14 @@ def get_waveform_data(file):
             input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'missing_file_path', 'missing_file_path': file['file_name']}})
 
-    df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
+    try:
+        df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
                                 'Volume (ml)'], error_bad_lines = False, warn_bad_lines = True)
+    except:
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'read_waveform_error',
+                                            'read_waveform_error': file_path}})
 
     try:
         df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
