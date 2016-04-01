@@ -68,7 +68,7 @@ def file_search():
                 posix = file.as_posix()
                 nt = ''
 
-            if file.stat().st_size > 100:
+            if file.stat().st_size > 1024:
                 try:
                     input_log.insert_one({'_id': str(p_id) + '_' + file.name,
                                           'patient_id': int(p_id),

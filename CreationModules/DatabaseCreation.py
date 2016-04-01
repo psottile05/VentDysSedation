@@ -228,6 +228,7 @@ def get_waveform_data(file):
             input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'time_parse_error',
                                                 'time_parse_error': file_path}})
+            print('date_time failed')
             df['date_time'] = np.nan
 
     df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
@@ -235,6 +236,8 @@ def get_waveform_data(file):
                          'Flow (l/min)': 'flow', 'Volume (ml)': 'vol'}, inplace = True)
     df['patient_ID'] = int(file['patient_id'])
     df['file'] = file_path
+
+    print(df.head())
     df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
     df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
     df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length = 7, polyorder = 2)
@@ -407,7 +410,7 @@ def get_waveform_and_breath(file):
                              {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': str(e)}})
     except Exception as e:
         input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'other_error', 'other_error': str(e)}})
-        print('Error1', e)
+        print('BulkError', e)
 
     if input_log.find({'_id': file['_id'], 'errors': {'$exists': 1}}, {'_id': 1}).count() < 1:
         try:
