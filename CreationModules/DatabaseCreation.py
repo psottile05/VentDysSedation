@@ -222,7 +222,7 @@ def get_waveform_data(file):
                                          format = '%d.%m.%y %H:%M:%S')
     except ValueError:
         try:
-            df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
+            df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'coerce',
                                              infer_datetime_format = True)
         except ValueError:
             input_log.update_one({'_id': file['_id']},
