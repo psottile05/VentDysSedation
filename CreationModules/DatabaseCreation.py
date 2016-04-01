@@ -19,7 +19,7 @@ breath_col = db.breath_collection
 def date_check(df, file):
     try:
         if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
-            print('Year out of range', df['date_time'].dt.year.min())
+            print('Year out of range', df['date_time'].min())
             input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'date_range_error', 'date_range_error': file['_id']}})
     except AttributeError:
@@ -45,7 +45,14 @@ def dtype_check(df, types, file):
                     input_log.update_one({'_id': file['_id']},
                                          {'$addToSet': {'errors': 'dtype_error', 'dtype_error': df['file']}})
             else:
-                df[col] = df[col].astype(types[col])
+                try:
+                    df[col] = df[col].astype(types[col])
+                    print('Successful conversion')
+                except:
+                    print('failed conversion')
+                    print(df[col])
+                    input_log.update_one({'_id': file['_id']},
+                                         {'$addToSet': {'errors': 'dtype_error', 'dtype_error': df['file']}})
 
 
 def align_breath(group, breath_df, file):
@@ -105,7 +112,7 @@ def get_breath_data(file):
                                     'P plateau (cmH2O)', 'AutoPEEP (cmH2O)',
                                     'P min (cmH2O)', 'Pinsp (cmH2O)', 'f total (b/min)',
                                         'TE (s)', 'Cstat (ml/cmH2O)', 'TI (s)', '!High Pressure'],
-                             low_memory = False
+                             low_memory = False, error_bad_lines = False, warn_bad_lines = True
                              )
             df.rename(columns = {'Vt (ml)': 'set_VT', 'PeakFlow (l/min)': 'peak_flow',
                                  'Ptrigg (cmH2O)': 'ptrigg', 'Peep (cmH2O)': 'peep', 'Psupp (cmH2O)': 'psupp',
@@ -199,7 +206,8 @@ def get_waveform_data(file):
 
     df = pd.read_csv(file_path, sep = '\t', header = 1, na_values = '--', engine = 'c',
                      usecols = ['Date', 'HH:MM:SS', 'Time(ms)', 'Breath', 'Status', 'Paw (cmH2O)', 'Flow (l/min)',
-                                'Volume (ml)'])
+                                'Volume (ml)'], error_bad_lines = False, warn_bad_lines = True)
+
     try:
         df['date_time'] = pd.to_datetime(df['Date'] + ' ' + df['HH:MM:SS'], errors = 'raise',
                                          format = '%d.%m.%y %H:%M:%S')
@@ -229,7 +237,7 @@ def get_waveform_data(file):
     df['dP/dV'] = df.paw_dt / df.vol_dt
     df['dF/dP'] = df.flow_dt / df.paw_dt
 
-    types = {'time': 'int64', 'breath': 'int64', 'status': 'int64', 'paw': 'float64', 'flow': 'float64',
+    types = {'time': 'float64', 'breath': 'float64', 'status': 'float64', 'paw': 'float64', 'flow': 'float64',
              'vol': 'float64',
              'date_time': 'datetime64[ns]', 'patient_ID': 'int64', 'file': 'object', 'sm_vol': 'float64',
              'sm_paw': 'float64',
