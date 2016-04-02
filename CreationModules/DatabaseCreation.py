@@ -157,6 +157,7 @@ def get_breath_data(file):
         df['file'] = file['match_file']
         df.drop(['Date', 'HH:MM:SS'], axis = 1, inplace = True)
         df.dropna(subset = ['date_time'], how = 'any', axis = 0, inplace = True)
+        df.drop_duplicates(subset = 'date_time', keep = 'first', inplace = 'True')
 
         types = {'set_VT': 'float64', 'peak_flow': 'float64', 'ptrigg': 'float64', 'peep': 'float64',
                  'psupp': 'float64', 'file': 'object',
@@ -171,7 +172,7 @@ def get_breath_data(file):
         date_check(df, file)
         dtype_check(df, types, file)
 
-        df.set_index(['date_time'], inplace = True)
+        df.set_index(['date_time'], verify_integrity = True, inplace = True)
         df.vent_mode = df.vent_mode.astype('category')
         df.file = df.file.astype('category')
         df = df.resample('1s').pad(limit = 30)
