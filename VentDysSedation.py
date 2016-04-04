@@ -5,6 +5,7 @@ from ipyparallel import Client
 from pymongo import MongoClient
 
 from CreationModules import FileSearch as FS
+from CreationModules import PriorBreathData as PDB
 
 __author__ = 'sottilep'
 
@@ -56,15 +57,20 @@ def make_EHR_data(files):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = input_log.find({'type': 'waveform', 'loaded': 0, 'errors': {'$exists': 0}, 'file_size': {'$gt': 1024}})
+files = input_log.find({'type': 'waveform', 'loaded': 0, 'file_size': {'$gt': 1024}}).skip(2)
 make_waveform_and_breath(files)
 
+# Query DB to Add Previous Breath Data
+PDB.update_breath()
+
 # Query DB for list of EHR files not yet added
-# files = input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
-#                                 {'type': {'$not': re.compile(r'breath')}},
-#                                 {'type': {'$not': re.compile(r'other')}},
-#                                 {'loaded': 0}, {'file_size': {'gte': 0}}]}, {'_id': 1, 'patient_id': 1}).limit(3)
-# make_EHR_data(files)
+files = input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
+                                 {'type': {'$not': re.compile(r'breath')}},
+                                 {'type': {'$not': re.compile(r'other')}},
+                                 {'loaded': 0}, {'file_size': {'gte': 1024}}]}, {'_id': 1, 'patient_id': 1}).limit(3)
+make_EHR_data(files)
+
+
 
 for items in input_log.find({'loaded': 1}, {'type': 1}):
     print(items)

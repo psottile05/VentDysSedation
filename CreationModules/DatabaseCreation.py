@@ -18,7 +18,7 @@ breath_col = db.breath_collection
 
 def date_check(df, file):
     try:
-        if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2016)]['date_time'].any():
+        if df[(df['date_time'].dt.year < 2014) | (df['date_time'].dt.year > 2017)]['date_time'].any():
             print('Year out of range', df['date_time'].min())
             input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'date_range_error', 'date_range_error': file['_id']}})
@@ -175,7 +175,11 @@ def get_breath_data(file):
         df.set_index(['date_time'], verify_integrity = True, inplace = True)
         df.vent_mode = df.vent_mode.astype('category')
         df.file = df.file.astype('category')
-        df = df.resample('1s').pad(limit = 30)
+
+        try:
+            df = df.resample('1s').pad(limit = 30)
+        except MemoryError:
+            pass
 
     else:
         print('missing breath file')
@@ -238,10 +242,10 @@ def get_waveform_data(file):
     df['patient_ID'] = int(file['patient_id'])
     df['file'] = file_path
 
-    # TODO limit if df size is zero
-    df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
-    df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
-    df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length = 7, polyorder = 2)
+    if df.shape[0] != 0:
+        df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
+        df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
+        df['sm_flow'] = sig.savgol_filter(df.flow.values, window_length = 7, polyorder = 2)
 
     df['vol_dt'] = df.vol.diff()
     df['flow_dt'] = df.flow.diff()
@@ -409,6 +413,10 @@ def get_waveform_and_breath(file):
         print('InvalidDoc', e)
         input_log.update_one({'_id': file['_id']},
                              {'$addToSet': {'errors': 'invalid_doc_error', 'invalid_doc_error': str(e)}})
+    except errors.DocumentTooLarge as e:
+        print('Doc Too Large', e)
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'doc_size error', 'doc_too_large': str(e)}})
     except Exception as e:
         input_log.update_one({'_id': file['_id']}, {'$addToSet': {'errors': 'other_error', 'other_error': str(e)}})
         print('BulkError', e)
