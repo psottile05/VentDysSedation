@@ -42,14 +42,14 @@ FS.file_search()
 FS.file_match()
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
         DatabaseCreation.get_waveform_and_breath(file)
 
 
-# @ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_EHR_data(files):
     from CreationModules import EHR_decoder
     for file in files:

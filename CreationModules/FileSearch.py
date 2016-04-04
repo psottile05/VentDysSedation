@@ -3,6 +3,7 @@ import os
 import re
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 from pymongo import MongoClient, errors
 
@@ -36,6 +37,7 @@ def file_search():
     for x in p.iterdir():
         files = [y for y in x.glob('*.txt')]
         for file in files:
+            elapse_time = np.nan
             if 'Breath' in file.name or 'breath' in file.name:
                 file_type = "breath"
             elif 'Waveform' in file.name or 'waveform' in file.name:
