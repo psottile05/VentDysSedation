@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 from pathlib import Path
+import pandas as pd
 
 from pymongo import MongoClient, errors
 
@@ -39,6 +40,9 @@ def file_search():
                 file_type = "breath"
             elif 'Waveform' in file.name or 'waveform' in file.name:
                 file_type = "waveform"
+                df = pd.read_csv(file, sep = '\t', header = 1, na_values = '--', engine = 'c',
+                                 usecols = ['Time(ms)'], error_bad_lines = False, warn_bad_lines = True)
+                elapse_time = (df['Time(ms)'].max() - df['Time(ms)'].min()) / (1000 * 60 * 60)
             elif ('RT' in file.name or 'rt' in file.name) and ('edit' not in file.name):
                 file_type = "rt"
             elif ('RN' in file.name or 'rn' in file.name) and ('edit' not in file.name):
@@ -76,6 +80,7 @@ def file_search():
                                           'file_name': {'posix': [posix], 'nt': [nt]},
                                           'file_size': file.stat().st_size,
                                           'start_time': start_time,
+                                          'elapse_time_h': elapse_time,
                                           'loc': [start_time.timestamp(), p_id],
                                           'loaded': 0, 'crossed': 0})
                 except errors.DuplicateKeyError:
