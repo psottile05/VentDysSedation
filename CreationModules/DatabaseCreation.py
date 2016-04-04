@@ -242,6 +242,13 @@ def get_waveform_data(file):
     df['patient_ID'] = int(file['patient_id'])
     df['file'] = file_path
 
+    types = {'time': 'float64', 'breath': 'float64', 'status': 'float64', 'paw': 'float64', 'flow': 'float64',
+             'vol': 'float64',
+             'date_time': 'datetime64[ns]', 'patient_ID': 'int64', 'file': 'object'}
+
+    date_check(df, file)
+    dtype_check(df, types, file)
+
     if df.shape[0] != 0:
         df['sm_vol'] = sig.savgol_filter(df.vol.values, window_length = 7, polyorder = 2)
         df['sm_paw'] = sig.savgol_filter(df.paw.values, window_length = 7, polyorder = 2)
