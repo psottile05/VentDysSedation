@@ -38,8 +38,8 @@ except pymongo.errors.OperationFailure:
     pass
 
 # Update List of RawDataFiles and Match Breath/Waveform Files
-FS.file_search()
-FS.file_match()
+# FS.file_search()
+# FS.file_match()
 
 
 @ipview.parallel(block = True)

@@ -415,7 +415,7 @@ def get_waveform_and_breath(file):
                 input_log.update_one({'_id': file['_id']},
                                      {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': 'bulk error'}})
             else:
-                print(bwe.details['writeError']['errmsg'])
+                print(bwe.details)
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
         input_log.update_one({'_id': file['_id']},
