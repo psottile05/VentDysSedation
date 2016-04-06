@@ -25,15 +25,18 @@ def get_breaths(limits):
 
 def breath_viz(id):
     try:
-        breath = list(train_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
+        breath = list(train_db.find({'_id': id}, {'patient_id': 1, 'date_time': 1, 'breath_num': 1, 'breath_raw': 1}))[
+            0]
         breath_start = breath['breath_raw']['time'][0]
         breath_end = breath['breath_raw']['time'][-1]
 
-        print(breath, list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
+        print(breath, list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': breath['date_time'],
+                                           'breath_num': breath['breath_num'] - 1},
                                           {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
               )
         try:
-            pre_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] - 1},
+            pre_breath = list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': breath['date_time'],
+                                              'breath_num': breath['breath_num'] - 1},
                                              {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
         except IndexError:
             pre_breath = {
@@ -46,7 +49,8 @@ def breath_viz(id):
                                'sm_dP/dTT': []}}
 
         try:
-            post_breath = list(breath_db.find({'file': breath['file'], 'breath_num': breath['breath_num'] + 1},
+            post_breath = list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': breath['date_time'],
+                                               'breath_num': breath['breath_num'] + 1},
                                               {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
         except IndexError:
             post_breath = {
