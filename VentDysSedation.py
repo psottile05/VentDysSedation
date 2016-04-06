@@ -57,7 +57,7 @@ def make_EHR_data(files):
 
 
 # Query DB for list of Waveform/breath files not yet added
-files = input_log.find({'type': 'waveform', 'loaded': 0, 'file_size': {'$gt': 1024}}).skip(2)
+files = input_log.find({'type': 'waveform', 'loaded': 0, 'errors': {'$exists': 0}, 'file_size': {'$gt': 1024}})
 make_waveform_and_breath(files)
 
 # Query DB to Add Previous Breath Data

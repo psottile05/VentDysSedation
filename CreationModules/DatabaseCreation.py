@@ -324,16 +324,19 @@ def waveform_data_entry(group, breath_df, file):
         'mean_insp_paw': float(insp_df.paw.mean()),
         'end_insp_paw': float(end_insp_df.paw.max()),
         'mean_exp_paw': float(exp_df.paw.mean()),
+        'min_exp_paw': float(exp_df.paw.min()),
         'min_paw': float(group.paw.min()),
 
         'peak_flow': float(group.flow.max()),
         'mean_insp_flow': float(insp_df.flow.mean()),
         'end_insp_flow': float(end_insp_df.flow.min()),
         'mean_exp_flow': float(exp_df.flow.mean()),
+        'min_exp_flow': float(exp_df.flow.min()),
         'min_flow': float(group.flow.min()),
 
         'peak_vol': float(group.vol.max()),
         'end_insp_vol': float(end_insp_df.vol.min()),
+        'min_exp_vol': float(exp_df.vol.min()),
         'min_vol': float(group.vol.min()),
 
         'n_dF/dV_insp_max': int(calc_inner_df[calc_inner_df['dF/dV_insp_max'] > 0]['dF/dV_insp_max'].count()),
@@ -406,17 +409,15 @@ def get_waveform_and_breath(file):
             input_log.update_one({'_id': file['_id']},
                                  {'$addToSet': {'errors': 'insert_error', 'insert_error': str(e)}})
 
+
     try:
-        bulk_ops.execute()
+        results = bulk_ops.execute()
+        print(results)
     except errors.BulkWriteError as bwe:
         print(bwe)
-        for items in bwe.details['writeErrors']:
-            if items['code'] != 11000:
-                print('BulkWrite', items['errmsg'])
-                input_log.update_one({'_id': file['_id']},
-                                     {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': 'bulk error'}})
-            else:
-                print(bwe.details)
+        input_log.update_one({'_id': file['_id']},
+                             {'$addToSet': {'errors': 'bulk_write_error', 'bulk_error': str(bwe)}})
+
     except errors.InvalidDocument as e:
         print('InvalidDoc', e)
         input_log.update_one({'_id': file['_id']},
