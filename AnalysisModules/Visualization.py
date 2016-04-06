@@ -19,7 +19,7 @@ def get_sample():
 
 
 def get_breaths(limits):
-    results = train_db.find({'validation': {'$exists': 0}}).limit(limits)
+    results = train_db.find({'validation': {'$exists': 0}, 'breath_character.exp_time': {'$lte': 1000}}).limit(limits)
     return results
 
 
