@@ -31,7 +31,7 @@ def breath_viz(id):
         breath_end = breath['breath_raw']['time'][-1]
 
         real_breath = list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': breath['date_time'],
-                                           'breath_num': breath['breath)num']}, {'_id': 1, 'file': 1}))[0]
+                                           'breath_num': breath['breath_num']}, {'_id': 1, 'file': 1}))[0]
         try:
             pre_breath = list(breath_db.find({'file': real_breath['file'], 'breath_num': breath['breath_num'] - 1},
                                              {'file': 1, 'breath_num': 1, 'breath_raw': 1}))[0]
