@@ -61,13 +61,15 @@ files = input_log.find({'type': 'waveform', 'loaded': 0, 'errors': {'$exists': 0
 make_waveform_and_breath(files)
 
 # Query DB to Add Previous Breath Data
-PDB.update_breath()
+current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
+                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
+ipview.map(PDB.update_breath, current_breath_list)
 
 # Query DB for list of EHR files not yet added
 files = input_log.find({'$and': [{'type': {'$not': re.compile(r'waveform')}},
                                  {'type': {'$not': re.compile(r'breath')}},
                                  {'type': {'$not': re.compile(r'other')}},
-                                 {'loaded': 0}, {'file_size': {'gte': 1024}}]}, {'_id': 1, 'patient_id': 1}).limit(3)
+                                 {'loaded': 0}, {'file_size': {'gte': 1024}}]}, {'_id': 1, 'patient_id': 1})
 make_EHR_data(files)
 
 
