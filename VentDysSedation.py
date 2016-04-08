@@ -42,31 +42,29 @@ except pymongo.errors.OperationFailure:
 # FS.file_match()
 
 
-@ipview.parallel(block = True)
+# @ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
         DatabaseCreation.get_waveform_and_breath(file)
 
 
-@ipview.parallel(block = True)
+#@ipview.parallel(block = True)
 def make_EHR_data(files):
 
     from CreationModules import EHR_decoder
     for file in files:
-        print(file)
         EHR_decoder.load_EHR_data(file['_id'], file['patient_id'])
 
 
 # Query DB for list of Waveform/breath files not yet added
 files = input_log.find({'type': 'waveform', 'loaded': 0, 'errors': {'$exists': 0}, 'file_size': {'$gt': 1024}})
-
 make_waveform_and_breath(files)
 
 # Query DB to Add Previous Breath Data
-current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
-                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
-ipview.map(PDB.update_breath, current_breath_list)
+# current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
+#                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
+#ipview.map(PDB.update_breath, current_breath_list)
 
 # Query DB for list of EHR files not yet added
 files = input_log.find({'$or': [{'type': 'rt'}, {'type': 'rn'}, {'type': 'lab'}],

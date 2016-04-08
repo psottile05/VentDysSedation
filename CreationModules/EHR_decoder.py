@@ -189,13 +189,11 @@ def data_analysis(fileName):
     temp_df['DateTime'] = pd.to_datetime(temp_df['DateTime'], infer_datetime_format = True)
     temp_df.set_index('DateTime', inplace = True, drop = True)
     temp_df.dropna(inplace = True, axis = 0, how = 'all')
-    temp_df = pd.to_numeric(temp_df, errors = 'ignore')
 
     cols = temp_df.columns
     for col in cols:
         temp = temp_df[col]
         temp.dropna(inplace = True)
-
         df = df.join(temp, how = 'left')
 
     df.dropna(inplace = True, how = 'all')
@@ -203,6 +201,8 @@ def data_analysis(fileName):
     try:
         df['SBP'] = df['BP'].str.split('/', n = 1).str.get(0)
         df['DBP'] = df['BP'].str.split('/', n = 1).str.get(1)
+        df['SBP'] = pd.to_numeric(df['SBP'], errors = 'coerce')
+        df['DBP'] = pd.to_numeric(df['DBP'], errors = 'coerce')
         df.drop(['BP'], axis = 1, inplace = True)
     except:
         pass
@@ -210,10 +210,21 @@ def data_analysis(fileName):
     try:
         df['A_SBP'] = df['A-line'].str.split('/', n = 1).str.get(0)
         df['A_DBP'] = df['A-line'].str.split('/', n = 1).str.get(1)
+        df['A_SBP'] = pd.to_numeric(df['A_SBP'], errors = 'coerce')
+        df['A_DBP'] = pd.to_numeric(df['A_DBP'], errors = 'coerce')
         df.drop(['A-line'], axis = 1, inplace = True)
     except:
         pass
 
+    for items in ['MAP', 'Pulse', 'A-line', 'A-line MAP', 'CVP', 'SpO2', 'FiO2', 'Resp', 'Set Vt',
+                  'Set RR', 'RASS', 'TOF', 'PEEP', 'Plat', 'iNO', 'CPOT Tot', 'CPOT Vent']:
+        try:
+            df[items] = pd.to_numeric(df[items], errors = 'coerce')
+        except:
+            pass
+
+    df['Vent Mode'].replace({'APV;CMV': 'APVCMV', 'PRVC': 'APVCMV', 'CPAP': 'SPONT', 'PSV;CPAP': 'SPONT'},
+                            inplace = True)
     return df
 
 
@@ -280,34 +291,41 @@ def lab_analysis(fileName):
     return df
 
 
-def load_EHR_data(path, patients):
-    print(path, patients)
+def load_EHR_data(id, patient_id):
+    path = input_log.find_one({'_id': id}, {'file_name.nt': 1})['file_name']['nt'][0]
 
     if ('RN' in path) and 'edit' not in path:
+        error = None
         try:
             rn_df = data_analysis(path)
             rt_df = data_analysis(Path(path).parent.joinpath('RT Data.txt').as_posix())
             tot_df = rn_df.combine_first(rt_df)
         except Exception as e:
             error = {path, e}
-            print(error)
+            input_log.update_one({'_id': id}, {'errors': e})
             tot_df = pd.DataFrame()
 
         tot_df.reset_index(inplace = True)
         tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
-        tot_df['patientID'] = patients
+        tot_df['patientID'] = patient_id
         RN_db.insert_many(tot_df.to_dict(orient = 'records'), ordered = False)
-        input_log.update_one({'_id': Path(path).parent.joinpath('RT Data.txt').as_posix()}, {'$set': {'loaded': 1}})
+        if error == None:
+            input_log.update_one({'_id': id}, {'$set': {'loaded': 1}})
+            input_log.update_one({'_id': str(float(patient_id)) + '_RT Data.txt'}, {'$set': {'loaded': 1}})
 
     elif ('Lab' in path) and 'edit' not in path:
+        error = None
         try:
             df = lab_analysis(path)
         except Exception as e:
             error = {path, e}
-            print(error)
+            input_log.update_one({'_id': id}, {'errors': e})
 
-        df['patientID'] = patients
+        df['patientID'] = patient_id
         lab_db.insert_many(df.to_dict(orient = 'records'), ordered = False)
+
+        if error == None:
+            input_log.update_one({'_id': id}, {'$set': {'loaded': 1}})
 
     elif 'RT' in path:
         pass
