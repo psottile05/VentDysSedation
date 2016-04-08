@@ -42,9 +42,10 @@ def file_search():
                 file_type = "breath"
             elif 'Waveform' in file.name or 'waveform' in file.name:
                 file_type = "waveform"
-                df = pd.read_csv(str(file), sep = '\t', header = 1, na_values = '--', engine = 'c',
+                if file.stat().st_size > 1024:
+                    df = pd.read_csv(str(file), sep = '\t', header = 1, na_values = '--', engine = 'c',
                                  usecols = ['Time(ms)'], error_bad_lines = False, warn_bad_lines = True)
-                elapse_time = (df['Time(ms)'].max() - df['Time(ms)'].min()) / (1000 * 60 * 60)
+                    elapse_time = (df['Time(ms)'].max() - df['Time(ms)'].min()) / (1000 * 60 * 60)
             elif ('RT' in file.name or 'rt' in file.name) and ('edit' not in file.name):
                 file_type = "rt"
             elif ('RN' in file.name or 'rn' in file.name) and ('edit' not in file.name):

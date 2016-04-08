@@ -38,18 +38,18 @@ except pymongo.errors.OperationFailure:
     pass
 
 # Update List of RawDataFiles and Match Breath/Waveform Files
-# FS.file_search()
-# FS.file_match()
+FS.file_search()
+FS.file_match()
 
 
-# @ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
         DatabaseCreation.get_waveform_and_breath(file)
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block = True)
 def make_EHR_data(files):
 
     from CreationModules import EHR_decoder
@@ -62,9 +62,9 @@ files = input_log.find({'type': 'waveform', 'loaded': 0, 'errors': {'$exists': 0
 make_waveform_and_breath(files)
 
 # Query DB to Add Previous Breath Data
-# current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
-#                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
-#ipview.map(PDB.update_breath, current_breath_list)
+current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
+                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
+ipview.map(PDB.update_breath, current_breath_list)
 
 # Query DB for list of EHR files not yet added
 files = input_log.find({'$or': [{'type': 'rt'}, {'type': 'rn'}, {'type': 'lab'}],
