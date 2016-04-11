@@ -309,7 +309,7 @@ def load_EHR_data(id, patient_id):
         tot_df.rename(columns = {'index': 'date_time'}, inplace = True)
         tot_df['patientID'] = patient_id
         RN_db.insert_many(tot_df.to_dict(orient = 'records'), ordered = False)
-        if error == None:
+        if error is None:
             input_log.update_one({'_id': id}, {'$set': {'loaded': 1}})
             input_log.update_one({'_id': str(float(patient_id)) + '_RT Data.txt'}, {'$set': {'loaded': 1}})
 
@@ -324,7 +324,7 @@ def load_EHR_data(id, patient_id):
         df['patientID'] = patient_id
         lab_db.insert_many(df.to_dict(orient = 'records'), ordered = False)
 
-        if error == None:
+        if error is None:
             input_log.update_one({'_id': id}, {'$set': {'loaded': 1}})
 
     elif 'RT' in path:
