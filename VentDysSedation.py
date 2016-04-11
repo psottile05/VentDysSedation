@@ -40,8 +40,8 @@ except pymongo.errors.OperationFailure:
 
 
 # Update List of RawDataFiles and Match Breath/Waveform Files
-# FS.file_search()
-# FS.file_match()
+FS.file_search()
+FS.file_match()
 
 
 @ipview.parallel(block = True)
@@ -65,13 +65,10 @@ make_waveform_and_breath(files)
 print('finished entering breaths')
 
 # Query DB to Add Previous Breath Data
-# {'next_breath_data': {'$exists': 0}},
-current_breath_list = breath_col.find({},
-                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1}).limit(1)
+current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
+                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
 print('Next Breath: ', current_breath_list.count())
-# ipview.map(PDB.update_breath, current_breath_list)
-PDB.update_breath(current_breath_list[0])
-map(PDB.update_breath, current_breath_list)
+PDB.update_breath(current_breath_list)
 print('finished crossing next breath')
 
 # Query DB for list of EHR files not yet added
@@ -80,8 +77,8 @@ files = input_log.find({'$or': [{'type': 'rt'}, {'type': 'rn'}, {'type': 'lab'}]
                         'file_size': {'$gte': 1024}},
                        {'_id': 1, 'patient_id': 1})
 print('EHR: ', files.count())
-# make_EHR_data(files)
+make_EHR_data(files)
 print('finished EHR loading')
 
-# for items in input_log.find({'loaded': 1}, {'type': 1}):
-#    print(items)
+for items in input_log.find({'loaded': 1}, {'type': 1}):
+    print(items)
