@@ -21,9 +21,11 @@ def update_breath(current_breath):
                                            {'$set': {'next_breath_data': next_breath['breath_character']}}
                                            )
         except Exception as e:
+            print('next update error: ', str(e))
             input_log.update_one({'_id': current_breath['_id']},
                                  {'$addToSet': {'errors': 'next_breath_update_error', 'update_error': str(e)}})
     else:
+        print('no next breath')
         input_log.update_one({'_id': current_breath['_id']},
                              {'$addToSet': {'errors': 'next_breath_missing_error',
                                             'no_next_breath_error': current_breath['breath_num']}})
