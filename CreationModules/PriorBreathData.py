@@ -1,5 +1,6 @@
 from pymongo import MongoClient
-from ipyparallel import Client
+
+# from ipyparallel import Client
 
 client = MongoClient()
 db = client.VentDB
@@ -7,10 +8,11 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-ipclient = Client()
-ipview = ipclient.direct_view()
 
-ipview.parallel()
+# ipclient = Client()
+#ipview = ipclient.direct_view()
+
+#ipview.parallel()
 
 
 def update_breath(breath_list):

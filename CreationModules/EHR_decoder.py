@@ -223,8 +223,12 @@ def data_analysis(fileName):
         except:
             pass
 
-    df['Vent Mode'].replace({'APV;CMV': 'APVCMV', 'PRVC': 'APVCMV', 'CPAP': 'SPONT', 'PSV;CPAP': 'SPONT'},
+    try:
+        df['Vent Mode'].replace({'APV;CMV': 'APVCMV', 'PRVC': 'APVCMV', 'CPAP': 'SPONT', 'PSV;CPAP': 'SPONT'},
                             inplace = True)
+    except KeyError:
+        pass
+    
     return df
 
 
@@ -302,7 +306,7 @@ def load_EHR_data(id, patient_id):
             tot_df = rn_df.combine_first(rt_df)
         except Exception as e:
             error = {path, e}
-            input_log.update_one({'_id': id}, {'errors': e})
+            input_log.update_one({'_id': id}, {'$set': {'errors': e}})
             tot_df = pd.DataFrame()
 
         tot_df.reset_index(inplace = True)
