@@ -148,6 +148,7 @@ def breath_getter(breath_df, start_time, end_insp_time, end_time, mongo_record):
             min_time_df = pd.DataFrame(data = {'time': min_time_value, 'max_min': min_marker, 'value': min_value})
             min_time_df['curve'] = curve
 
+            print(min_time_df[(min_time_df.time >= start_time) & (min_time_df.time <= end_insp_time)])
             if min_time_df[(min_time_df.time >= start_time) & (min_time_df.time <= end_insp_time)].count() < 1:
                 minv = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].min()
                 min_arg = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].argmin()

@@ -2,24 +2,24 @@ import datetime
 import re
 import pymongo
 from pymongo import MongoClient
-from ipyparallel import Client
+# from ipyparallel import Client
 
 from CreationModules import FileSearch as FS
 from CreationModules import PriorBreathData as PDB
 
 __author__ = 'sottilep'
 
-ipclient = Client()
-print(ipclient.ids)
-ipview = ipclient.direct_view()
+# ipclient = Client()
+# print(ipclient.ids)
+#ipview = ipclient.direct_view()
 
 client = MongoClient()
 db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-# input_log.drop()
-# breath_col.drop()
+input_log.drop()
+breath_col.drop()
 
 try:
     input_log.create_index([('type', pymongo.TEXT)])
@@ -44,14 +44,14 @@ FS.file_search()
 FS.file_match()
 
 
-@ipview.parallel(block = True)
+#@ipview.parallel(block = True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
         DatabaseCreation.get_waveform_and_breath(file)
 
 
-@ipview.parallel(block = True)
+#@ipview.parallel(block = True)
 def make_EHR_data(files):
     from CreationModules import EHR_decoder
     for file in files:

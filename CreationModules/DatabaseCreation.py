@@ -374,7 +374,7 @@ def waveform_data_entry(group, breath_df, file):
         'patient_id': int(group.patient_ID.head(1)),
         'file': group.file.head(1).values[0],
         'breath_num': int(group.breath.min()),
-        'date_time': group.date_time.min().timestamp(),
+        'date_time': group.date_time.min(),
         'loc': [group.date_time.min().timestamp(), int(group.patient_ID.head(1))],
         'breath_settings': breath_setting,
         'breath_raw': raw_dict,
