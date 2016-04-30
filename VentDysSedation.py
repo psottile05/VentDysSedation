@@ -18,8 +18,8 @@ db = client.VentDB
 input_log = db.input_log
 breath_col = db.breath_collection
 
-input_log.drop()
-breath_col.drop()
+# input_log.drop()
+# breath_col.drop()
 
 try:
     input_log.create_index([('type', pymongo.TEXT)])
@@ -40,8 +40,8 @@ except pymongo.errors.OperationFailure:
 
 
 # Update List of RawDataFiles and Match Breath/Waveform Files
-FS.file_search()
-FS.file_match()
+# FS.file_search()
+#FS.file_match()
 
 
 #@ipview.parallel(block = True)

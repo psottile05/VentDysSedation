@@ -129,6 +129,7 @@ def breath_getter(breath_df, start_time, end_insp_time, end_time, mongo_record):
 
         time = breath_df['time'].values
         values = breath_df[curve].values
+
         try:
             min_time, max_drop = clean_max_min(time, values, max_time_df['time'].values)
 
@@ -148,34 +149,41 @@ def breath_getter(breath_df, start_time, end_insp_time, end_time, mongo_record):
             min_time_df = pd.DataFrame(data = {'time': min_time_value, 'max_min': min_marker, 'value': min_value})
             min_time_df['curve'] = curve
 
-            print(min_time_df[(min_time_df.time >= start_time) & (min_time_df.time <= end_insp_time)])
-            if min_time_df[(min_time_df.time >= start_time) & (min_time_df.time <= end_insp_time)].count() < 1:
+            if min_time_df[(min_time_df.time >= start_time) & (min_time_df.time <= end_insp_time)].shape[0] < 1:
                 minv = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].min()
                 min_arg = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].argmin()
-                min_time_df.append(pd.DataFrame({'time': min_arg, 'max_min': -1, 'value': minv, 'curve': curve}))
-            if min_time_df[(min_time_df.time >= end_insp_time) & (min_time_df.time <= end_time)].count() < 1:
+                df = pd.DataFrame({'time': min_arg, 'max_min': -1, 'value': minv, 'curve': curve},
+                                  index = np.array([1]))
+                min_time_df.append(df, ignore_index = True)
+
+            if min_time_df[(min_time_df.time >= end_insp_time) & (min_time_df.time <= end_time)].shape[0] < 1:
                 minv = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].min()
                 min_arg = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].argmin()
-                min_time_df.append(pd.DataFrame({'time': min_arg, 'max_min': -1, 'value': minv, 'curve': curve}))
+                df = pd.DataFrame({'time': min_arg, 'max_min': -1, 'value': minv, 'curve': curve},
+                                  index = np.array([1]))
+                min_time_df.append(df, ignore_index = True)
 
             max_drop.pop(0)
             max_time_df.drop(max_drop, axis = 0, inplace = True)
 
-            if max_time_df[(max_time_df.time >= start_time) & (max_time_df.time <= end_insp_time)].count() < 1:
+            if max_time_df[(max_time_df.time >= start_time) & (max_time_df.time <= end_insp_time)].shape[0] < 1:
                 maxv = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].max()
                 max_arg = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].argmax()
-                max_time_df.append(pd.DataFrame({'time': max_arg, 'max_min': 1, 'value': maxv, 'curve': curve}))
+                df = pd.DataFrame({'time': max_arg, 'max_min': 1, 'value': maxv, 'curve': curve}, index = np.array([1]))
+                max_time_df.append(df, ignore_index = True)
 
-            if max_time_df[(max_time_df.time >= end_insp_time) & (max_time_df.time <= end_time)].count() < 1:
+            if max_time_df[(max_time_df.time >= end_insp_time) & (max_time_df.time <= end_time)].shape[0] < 1:
                 maxv = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].max()
                 max_arg = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].argmax()
-                max_time_df.append(pd.DataFrame({'time': max_arg, 'max_min': 1, 'value': maxv, 'curve': curve}))
+                df = pd.DataFrame(data = {'time': max_arg, 'max_min': 1, 'value': maxv, 'curve': curve},
+                                  index = np.array([1]))
+                max_time_df.append(df, ignore_index = True)
 
             min_time_df.set_index('time', drop = False, inplace = True)
             max_time_df.set_index('time', drop = False, inplace = True)
 
             max_min_time_df = pd.concat([max_time_df, min_time_df]).sort_index()
-            max_min_time_df.drop_duplicates(subset = 'time', keep = 'first', inplac = True)
+            max_min_time_df.drop_duplicates(subset = 'time', keep = 'first', inplace = True)
 
         except Exception as e:
             print('Error with max/min clean', e)
