@@ -94,7 +94,7 @@ def clean_max_min(time, curve_values, max_time):
     return min_time, max_drop
 
 
-def breath_getter(breath_df, mongo_record):
+def breath_getter(breath_df, start_time, end_insp_time, end_time, mongo_record):
     max_min_df = pd.DataFrame()
     for curve in ['sm_flow', 'sm_paw', 'sm_vol']:
         global last_value
@@ -147,13 +147,35 @@ def breath_getter(breath_df, mongo_record):
 
             min_time_df = pd.DataFrame(data = {'time': min_time_value, 'max_min': min_marker, 'value': min_value})
             min_time_df['curve'] = curve
-            min_time_df.set_index('time', drop = False, inplace = True)
+
+            if min_time_df[(min_time_df.time >= start_time) & (min_time_df.time <= end_insp_time)].count() < 1:
+                minv = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].min()
+                min_arg = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].argmin()
+                min_time_df.append(pd.DataFrame({'time': min_arg, 'max_min': -1, 'value': minv, 'curve': curve}))
+            if min_time_df[(min_time_df.time >= end_insp_time) & (min_time_df.time <= end_time)].count() < 1:
+                minv = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].min()
+                min_arg = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].argmin()
+                min_time_df.append(pd.DataFrame({'time': min_arg, 'max_min': -1, 'value': minv, 'curve': curve}))
 
             max_drop.pop(0)
             max_time_df.drop(max_drop, axis = 0, inplace = True)
+
+            if max_time_df[(max_time_df.time >= start_time) & (max_time_df.time <= end_insp_time)].count() < 1:
+                maxv = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].max()
+                max_arg = breath_df[(breath_df.time >= start_time) & (breath_df.time <= end_insp_time)][curve].argmax()
+                max_time_df.append(pd.DataFrame({'time': max_arg, 'max_min': 1, 'value': maxv, 'curve': curve}))
+
+            if max_time_df[(max_time_df.time >= end_insp_time) & (max_time_df.time <= end_time)].count() < 1:
+                maxv = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].max()
+                max_arg = breath_df[(breath_df.time >= end_insp_time) & (breath_df.time <= end_time)][curve].argmax()
+                max_time_df.append(pd.DataFrame({'time': max_arg, 'max_min': 1, 'value': maxv, 'curve': curve}))
+
+            min_time_df.set_index('time', drop = False, inplace = True)
             max_time_df.set_index('time', drop = False, inplace = True)
 
             max_min_time_df = pd.concat([max_time_df, min_time_df]).sort_index()
+            max_min_time_df.drop_duplicates(subset = 'time', keep = 'first', inplac = True)
+
         except Exception as e:
             print('Error with max/min clean', e)
             max_min_time_df = pd.DataFrame()
@@ -161,6 +183,7 @@ def breath_getter(breath_df, mongo_record):
                 '$addToSet': {'errors': 'max_min_error', 'max_min_error': mongo_record['breath_num']}})
 
         max_min_df = pd.concat([max_min_df, max_min_time_df])
+
     return max_min_df
 
 
@@ -196,7 +219,7 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
             shoulder_time = int(shoulder['time'].iloc[0])
             shoulder_amp = float(shoulder[curve].iloc[0])
             if insp_time != 0:
-                shoulder_time_percent = shoulder_time / insp_time
+                shoulder_time_percent = (end_insp_time - shoulder_time) / insp_time
             else:
                 shoulder_time_percent = np.nan
         else:
@@ -226,28 +249,48 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
                             'n_exp_max_75': int(max_df['value'].loc[exp_75_time:end_time].shape[0]),
                             'shoulder_time': shoulder_time,
                             'shoulder_amp': shoulder_amp,
-                            'shoulder_time_percent': shoulder_time_percent
+                            'shoulder_time_percent': shoulder_time_percent,
+                            'delta_insp_max': 0,
+                            'delta_insp_max_25': 0,
+                            'delta_insp_max_50': 0,
+                            'delta_insp_max_75': 0,
+                            'insp_25_max': 0,
+                            'insp_50_max': 0,
+                            'insp_75_max': 0,
+                            'insp_ptp_max_delta': 0,
+                            'insp_ptp_rel_position': 0,
+                            'insp_ptp_time_delta': 0,
+                            'insp_rise': 0,
+                            'insp_rise_25': 0,
+                            'insp_rise_50': 0,
+                            'insp_rise_75': 0,
                             }
+
             if max_min_data['n_insp_max'] > 0:
                 max_value = float(max_df['value'].loc[start_time:end_insp_time].max())
                 max_loc = int(max_df['value'].loc[start_time:end_insp_time].idxmax())
-                max_min_data['insp_rise'] = float((max_value - raw_df[curve.strip('sm_')]) / (max_loc - start_time))
+                max_min_data['insp_rise'] = float(
+                    (max_value - raw_df[curve.strip('sm_')].min()) / (max_loc - start_time))
+                max_min_data['delta_insp_max'] = float(max_value - raw_df[curve.strip('sm_')].min())
 
                 if max_min_data['n_insp_max_25'] > 0:
                     max_min_data['insp_25_max'] = float(max_df['value'].loc[start_time:insp_25_time].max())
-                    max_min_data['insp_rise_25'] = float((max_min_data['insp_25_max'] - raw_df[curve.strip('sm_')]) / (
+                    max_min_data['insp_rise_25'] = float(
+                        (max_min_data['insp_25_max'] - raw_df[curve.strip('sm_')].min()) / (
                         max_df['value'].loc[start_time:insp_25_time].idxmax() - start_time))
                     max_min_data['delta_insp_max_25'] = float(max_value - max_min_data['insp_25_max'])
 
                 if max_min_data['n_insp_max_50'] > 0:
                     max_min_data['insp_50_max'] = float(max_df['value'].loc[insp_25_time:insp_75_time].max())
-                    max_min_data['insp_rise_50'] = float((max_min_data['insp_50_max'] - raw_df[curve.strip('sm_')]) / (
+                    max_min_data['insp_rise_50'] = float(
+                        (max_min_data['insp_50_max'] - raw_df[curve.strip('sm_')].min()) / (
                         max_df['value'].loc[insp_25_time:insp_75_time].idxmax() - start_time))
                     max_min_data['delta_insp_max_50'] = float(max_value - max_min_data['insp_50_max'])
 
                 if max_min_data['n_insp_max_75'] > 0:
                     max_min_data['insp_75_max'] = float(max_df['value'].loc[insp_75_time:end_insp_time].max())
-                    max_min_data['insp_rise_75'] = float((max_min_data['insp_75_max'] - raw_df[curve.strip('sm_')]) / (
+                    max_min_data['insp_rise_75'] = float(
+                        (max_min_data['insp_75_max'] - raw_df[curve.strip('sm_')].min()) / (
                         max_df['value'].loc[insp_75_time:end_insp_time].idxmax() - start_time))
                     max_min_data['delta_insp_max_75'] = float(max_value - max_min_data['insp_75_max'])
 
@@ -257,10 +300,9 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
                     max_value2 = float(max_df['value'].loc[start_time:end_insp_time].max())
                     max_loc2 = int(max_df['value'].loc[start_time:end_insp_time].idxmax())
 
-                    max_min_data['delta_insp_max'] = float(max_value2)
                     max_min_data['insp_ptp_max_delta'] = float(max_value - max_value2)
-                    max_min_data['insp_ptp_time_delta'] = float(max_loc - max_loc2)
-                    max_min_data['insp_ptp_rel_position'] = float(max_loc / end_insp_time)
+                    max_min_data['insp_ptp_time_delta'] = float(max_loc2 - max_loc)
+                    max_min_data['insp_ptp_rel_position'] = float((end_insp_time - max_loc) / end_insp_time)
 
             max_min_data_tot[curve] = max_min_data
 
@@ -282,13 +324,14 @@ def analyze_breath(mongo_record):
     breath_raw = raw_df.astype(float).to_dict(orient = 'list')
     mongo_record['breath_raw'] = breath_raw
 
-    max_min_df = breath_getter(raw_df, mongo_record)
+    breath_char = mongo_record['breath_character']
+    max_min_df = breath_getter(raw_df, float(breath_char['start_time']),
+                               float(breath_char['end_insp_time']), float(breath_char['end_time']), mongo_record)
     max_min_raw = max_min_df[['time', 'value', 'max_min']].astype(float).to_dict(orient = 'list')
     curves = max_min_df['curve'].values.tolist()
     max_min_raw['curve'] = curves
     mongo_record['max_min_raw'] = max_min_raw
 
-    breath_char = mongo_record['breath_character']
     max_min_data = analyze_max_min(max_min_df, raw_df[['flow', 'vol', 'paw']].iloc[0], raw_df,
                                    float(breath_char['start_time']),
                                    float(breath_char['end_insp_time']), float(breath_char['end_time']), mongo_record)
