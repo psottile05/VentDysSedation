@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/AnalysisModules" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CreationModules" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.4.3 (C:\Users\sottilep\AppData\Local\Continuum\Anaconda3\python.exe)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.5.1 (C:\Users\sottilep\AppData\Local\Continuum\Anaconda3\python.exe)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

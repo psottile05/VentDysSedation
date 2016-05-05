@@ -2,16 +2,16 @@ import datetime
 import re
 import pymongo
 from pymongo import MongoClient
-# from ipyparallel import Client
+from ipyparallel import Client
 
 from CreationModules import FileSearch as FS
 from CreationModules import PriorBreathData as PDB
 
 __author__ = 'sottilep'
 
-# ipclient = Client()
-# print(ipclient.ids)
-#ipview = ipclient.direct_view()
+ipclient = Client()
+print(ipclient.ids)
+ipview = ipclient.direct_view()
 
 client = MongoClient()
 db = client.VentDB
@@ -28,7 +28,7 @@ try:
     input_log.create_index([('loc', pymongo.GEO2D)], min = -1,
                            max = (datetime.datetime.now() + datetime.timedelta(days = 1440)).timestamp())
 
-    breath_col.create_index([('patient_ID', pymongo.ASCENDING)])
+    breath_col.create_index([('patient_id', pymongo.ASCENDING)])
     breath_col.create_index([('file', pymongo.TEXT)])
     breath_col.create_index([('breath_num', pymongo.ASCENDING)])
     breath_col.create_index([('date_time', pymongo.ASCENDING)])
@@ -40,18 +40,18 @@ except pymongo.errors.OperationFailure:
 
 
 # Update List of RawDataFiles and Match Breath/Waveform Files
-# FS.file_search()
+#FS.file_search()
 #FS.file_match()
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block=True)
 def make_waveform_and_breath(files):
     from CreationModules import DatabaseCreation
     for file in files:
         DatabaseCreation.get_waveform_and_breath(file)
 
 
-#@ipview.parallel(block = True)
+@ipview.parallel(block=True)
 def make_EHR_data(files):
     from CreationModules import EHR_decoder
     for file in files:
@@ -66,7 +66,7 @@ print('finished entering breaths')
 
 # Query DB to Add Previous Breath Data
 current_breath_list = breath_col.find({'next_breath_data': {'$exists': 0}},
-                                      {'patient_id': 1, 'file': 1, 'breath_num': 1, 'breath_character': 1})
+                                      {'patient_id': 1, 'file': 1, 'breath_num': 1})
 print('Next Breath: ', current_breath_list.count())
 PDB.update_breath(current_breath_list)
 print('finished crossing next breath')

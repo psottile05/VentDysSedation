@@ -223,12 +223,12 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
             diff = 'sm_dF/dT'
 
         max = curve_df[curve].max() * 0.75
-        shoulder = curve_df[(curve_df[diff] < .75) & (curve_df[curve] > max)].head(1)
+        shoulder = curve_df[(curve_df[diff] < .65) & (curve_df[curve] > max)].head(1)
         if shoulder.shape[0] != 0:
             shoulder_time = int(shoulder['time'].iloc[0])
             shoulder_amp = float(shoulder[curve].iloc[0])
             if insp_time != 0:
-                shoulder_time_percent = (end_insp_time - shoulder_time) / insp_time
+                shoulder_time_percent = (shoulder_time - start_time) / (insp_time)
             else:
                 shoulder_time_percent = np.nan
         else:
@@ -278,6 +278,7 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
             if max_min_data['n_insp_max'] > 0:
                 max_value = float(max_df['value'].loc[start_time:end_insp_time].max())
                 max_loc = int(max_df['value'].loc[start_time:end_insp_time].idxmax())
+                max_min_data['max_loc'] = max_loc
                 max_min_data['insp_rise'] = float(
                     (max_value - raw_df[curve.strip('sm_')].min()) / (max_loc - start_time))
                 max_min_data['delta_insp_max'] = float(max_value - raw_df[curve.strip('sm_')].min())
@@ -305,13 +306,12 @@ def analyze_max_min(max_min_df, raw_df, curve_df, start_time, end_insp_time, end
 
                 if max_min_data['n_insp_max'] >= 2:
                     max_df = max_df.drop(max_df['value'].loc[start_time:end_insp_time].idxmax())
-
                     max_value2 = float(max_df['value'].loc[start_time:end_insp_time].max())
                     max_loc2 = int(max_df['value'].loc[start_time:end_insp_time].idxmax())
 
                     max_min_data['insp_ptp_max_delta'] = float(max_value - max_value2)
-                    max_min_data['insp_ptp_time_delta'] = float(max_loc2 - max_loc)
-                    max_min_data['insp_ptp_rel_position'] = float((end_insp_time - max_loc) / end_insp_time)
+                    max_min_data['insp_ptp_time_delta'] = abs(float(max_loc2 - max_loc))
+                    max_min_data['insp_ptp_rel_position'] = float(end_insp_time - max_loc) / float(end_insp_time)
 
             max_min_data_tot[curve] = max_min_data
 
