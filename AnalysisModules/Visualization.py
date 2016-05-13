@@ -1,6 +1,7 @@
 import pandas as pd
 from pymongo import MongoClient
 from bokeh.plotting import figure, output_notebook, show, vplot
+import datetime
 
 client = MongoClient()
 db = client.VentDB
@@ -29,8 +30,8 @@ def breath_viz(id):
             0]
         breath_start = breath['breath_raw']['time'][0]
         breath_end = breath['breath_raw']['time'][-1]
-        print(breath['patient_id'], breath['date_time'], breath['breath_num'])
-        real_breath = list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': breath['date_time'],
+        date_time = datetime.datetime.fromtimestamp(breath['date_time'])
+        real_breath = list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': date_time,
                                            'breath_num': breath['breath_num']}, {'_id': 1, 'file': 1}))[0]
         print('enter tries')
         try:
