@@ -60,7 +60,7 @@ def breath_viz(id):
 
         df = pd.concat([pd.DataFrame(pre_breath['breath_raw']), pd.DataFrame(breath['breath_raw']),
                         pd.DataFrame(post_breath['breath_raw'])])
-    except:
+    except Exception as e:
         df = pd.DataFrame({'flow': [], 'sm_dV/dTT': [], 'vol': [], 'dF/dT': [], 'sm_vol': [], 'breath': [],
                            'time': [],
                            'sm_dF/dT': [], 'sm_flow': [], 'status': [], 'sm_dF/dTT': [], 'sm_dV/dT': [],
@@ -70,7 +70,7 @@ def breath_viz(id):
                            'sm_dP/dTT': []})
         breath_end = 0
         breath_start = 0
-        print('breath error:', id)
+        print('breath error:', e, id)
         print(list(train_db.find({'_id': id}, {'file': 1, 'breath_num': 1, 'breath_raw': 1})))
 
     return df, breath_start, breath_end
