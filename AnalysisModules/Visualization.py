@@ -25,12 +25,11 @@ def get_breaths(limits):
 
 def breath_viz(id):
     try:
-        print('find train breath')
         breath = list(train_db.find({'_id': id}, {'patient_id': 1, 'date_time': 1, 'breath_num': 1, 'breath_raw': 1}))[
             0]
         breath_start = breath['breath_raw']['time'][0]
         breath_end = breath['breath_raw']['time'][-1]
-        print('find breath breath')
+        print(breath['patient_id'], breath['date_time'], breath['breath_num'])
         real_breath = list(breath_db.find({'patient_id': breath['patient_id'], 'date_time': breath['date_time'],
                                            'breath_num': breath['breath_num']}, {'_id': 1, 'file': 1}))[0]
         print('enter tries')
